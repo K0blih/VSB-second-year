@@ -1,0 +1,14 @@
+C:\Users\Richa\source\repos\Csharp1_cv2\bin\Debug\net9.0\Csharp1_cv2.exe
+C:\Users\Richa\source\repos\Csharp1_cv2\bin\Debug\net9.0\Csharp1_cv2.deps.json
+C:\Users\Richa\source\repos\Csharp1_cv2\bin\Debug\net9.0\Csharp1_cv2.runtimeconfig.json
+C:\Users\Richa\source\repos\Csharp1_cv2\bin\Debug\net9.0\Csharp1_cv2.dll
+C:\Users\Richa\source\repos\Csharp1_cv2\bin\Debug\net9.0\Csharp1_cv2.pdb
+C:\Users\Richa\source\repos\Csharp1_cv2\obj\Debug\net9.0\Csharp1_cv2.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Richa\source\repos\Csharp1_cv2\obj\Debug\net9.0\Csharp1_cv2.AssemblyInfoInputs.cache
+C:\Users\Richa\source\repos\Csharp1_cv2\obj\Debug\net9.0\Csharp1_cv2.AssemblyInfo.cs
+C:\Users\Richa\source\repos\Csharp1_cv2\obj\Debug\net9.0\Csharp1_cv2.csproj.CoreCompileInputs.cache
+C:\Users\Richa\source\repos\Csharp1_cv2\obj\Debug\net9.0\Csharp1_cv2.dll
+C:\Users\Richa\source\repos\Csharp1_cv2\obj\Debug\net9.0\refint\Csharp1_cv2.dll
+C:\Users\Richa\source\repos\Csharp1_cv2\obj\Debug\net9.0\Csharp1_cv2.pdb
+C:\Users\Richa\source\repos\Csharp1_cv2\obj\Debug\net9.0\Csharp1_cv2.genruntimeconfig.cache
+C:\Users\Richa\source\repos\Csharp1_cv2\obj\Debug\net9.0\ref\Csharp1_cv2.dll
