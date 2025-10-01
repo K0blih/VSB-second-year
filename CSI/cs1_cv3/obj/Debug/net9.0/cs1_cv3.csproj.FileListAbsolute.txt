@@ -1,0 +1,14 @@
+C:\Users\Richa\source\repos\cs1\cs1_cv3\obj\Debug\net9.0\cs1_cv3.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Richa\source\repos\cs1\cs1_cv3\obj\Debug\net9.0\cs1_cv3.AssemblyInfoInputs.cache
+C:\Users\Richa\source\repos\cs1\cs1_cv3\obj\Debug\net9.0\cs1_cv3.AssemblyInfo.cs
+C:\Users\Richa\source\repos\cs1\cs1_cv3\obj\Debug\net9.0\cs1_cv3.csproj.CoreCompileInputs.cache
+C:\Users\Richa\source\repos\cs1\cs1_cv3\bin\Debug\net9.0\cs1_cv3.exe
+C:\Users\Richa\source\repos\cs1\cs1_cv3\bin\Debug\net9.0\cs1_cv3.deps.json
+C:\Users\Richa\source\repos\cs1\cs1_cv3\bin\Debug\net9.0\cs1_cv3.runtimeconfig.json
+C:\Users\Richa\source\repos\cs1\cs1_cv3\bin\Debug\net9.0\cs1_cv3.dll
+C:\Users\Richa\source\repos\cs1\cs1_cv3\bin\Debug\net9.0\cs1_cv3.pdb
+C:\Users\Richa\source\repos\cs1\cs1_cv3\obj\Debug\net9.0\cs1_cv3.dll
+C:\Users\Richa\source\repos\cs1\cs1_cv3\obj\Debug\net9.0\refint\cs1_cv3.dll
+C:\Users\Richa\source\repos\cs1\cs1_cv3\obj\Debug\net9.0\cs1_cv3.pdb
+C:\Users\Richa\source\repos\cs1\cs1_cv3\obj\Debug\net9.0\cs1_cv3.genruntimeconfig.cache
+C:\Users\Richa\source\repos\cs1\cs1_cv3\obj\Debug\net9.0\ref\cs1_cv3.dll
