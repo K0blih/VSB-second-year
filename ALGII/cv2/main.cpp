@@ -14,26 +14,45 @@ void printMatrix(const Matrix&& mat)
     }
 }
 
-std::vector<ScalarType> solveAxb(Matrix A, std::vector<ScalarType> b)
-{
-    for (int i = 1; i < A.size() - 1; i++) {
-        for (int j = i + 1; i < A.size(); j++) {
-            ScalarType temp = A[j][i] / A[i][j];
+std::vector<ScalarType> solveAxb(Matrix A, std::vector<ScalarType> b){
+    Matrix L(A.size(), std::vector<ScalarType>(A.size(), 0.0));
+    for (size_t i = 0; i < L.size(); i++){
+        L[i][i] = 1;
+    }
 
-            for (int k = i; i < A.size(); k++) {
-                A[j][k] -= A[i][k] * temp;
+    for (size_t i = 0; i < A.size(); i++) {
+        size_t pivot = i;
+        ScalarType pivotValue = std::abs(A.at(i).at(i));
+        for (size_t l = i + 1; l < A.size(); l++){
+            if (std::abs(A.at(l).at(i)) > pivotValue){
+                pivot = l;
+                pivotValue = std::abs(A.at(l).at(i));
             }
-            b[j] -= b[j] * temp;
+        }
+
+        if(pivot != i){
+            std::swap(A[i], A[pivot]);
+            std::swap(b[i], b[pivot]);
+        }
+
+        for (size_t j = i + 1; j < A.size(); j++) {
+            ScalarType temp = A.at(j).at(i) / A.at(i).at(i);
+            L[j][i] = temp;
+            for (size_t k = i; k < A.size(); k++){
+                A[j][k] = A.at(j).at(k) - temp * A.at(i).at(k);
+            }
+            b[j] = b.at(j) - temp * b.at(i);
         }
     }
 
-    for (int i = A.size() - 1; i >= 0; i--) {
-        ScalarType sum = 0;
+    Matrix U = A;
 
-        for (int j = i + 1; j < A.size(); j++) {
-            sum -= A[i][j] * b[j];
+    for (int i = A.size() - 1; i >=0; i--){
+        double sum = 0;
+        for (size_t j = i + 1; j < A.size(); j++){
+            sum += A.at(i).at(j) * b.at(j);
         }
-        b[i] = (b[i] + sum / A[i][i]);
+        b[i] = (b.at(i) - sum)/A.at(i).at(i);
     }
 
     return b;
