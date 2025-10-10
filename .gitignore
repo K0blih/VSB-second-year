@@ -1,3 +1,7 @@
 .vscode
-*.txt
+.vs
+bin
+obj
+tests
 program
+*.txt
