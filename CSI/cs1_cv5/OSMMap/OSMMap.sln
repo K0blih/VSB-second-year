@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36429.23 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OSMMap", "OSMMap.csproj", "{C2A06BFE-718D-46A0-8467-13692A8699BA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OSMMapLib", "..\OSMMapLib\OSMMapLib.csproj", "{63BB492C-AC9B-46CF-A81F-2B4C584001D5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MapRendererLib", "..\MapRendererLib\MapRendererLib.csproj", "{95FFAB1B-348C-5E92-7195-BBAF06940426}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C2A06BFE-718D-46A0-8467-13692A8699BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2A06BFE-718D-46A0-8467-13692A8699BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2A06BFE-718D-46A0-8467-13692A8699BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2A06BFE-718D-46A0-8467-13692A8699BA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{63BB492C-AC9B-46CF-A81F-2B4C584001D5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{63BB492C-AC9B-46CF-A81F-2B4C584001D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{63BB492C-AC9B-46CF-A81F-2B4C584001D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{63BB492C-AC9B-46CF-A81F-2B4C584001D5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{95FFAB1B-348C-5E92-7195-BBAF06940426}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{95FFAB1B-348C-5E92-7195-BBAF06940426}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{95FFAB1B-348C-5E92-7195-BBAF06940426}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{95FFAB1B-348C-5E92-7195-BBAF06940426}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {26C97863-1504-4860-8264-7E4A3DC56CAA}
+	EndGlobalSection
+EndGlobal
