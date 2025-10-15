@@ -11,7 +11,7 @@ class Heap
 
     size_t parent(const size_t index) {
         if (index == 0) { return 0; }
-        return (index -1) / 2;
+        return (index -1) / n;
     }
 
     size_t child(const size_t index, const size_t k) {
@@ -21,7 +21,7 @@ class Heap
     void heapify(size_t index) {
         size_t largest = index;
 
-        for (size_t k = 0; k < n; ++k) {
+        for (size_t k = 0; k < n; k++) {
             size_t c = child(index, k);
             if (c < data.size() && data[c] > data[largest]) {
                 largest = c;
@@ -35,7 +35,7 @@ class Heap
     }   
 
     void makeHeap() {
-        for (int i = data.size() / n; i >= 0; i--) {
+        for (int i = (data.size() - 1) / n; i >= 0; i--) {
             heapify(i);
         }
     }
@@ -51,7 +51,7 @@ class Heap
 
     void insert(const int key) {
         data.push_back(key);
-        size_t currentIndex = data.size();
+        size_t currentIndex = data.size() - 1;
         size_t parentIndex = parent(currentIndex);
 
         while (currentIndex != 0 && data[currentIndex] > data[parentIndex]) {
@@ -115,7 +115,7 @@ std::vector<int> readIntegersFromFile(const std::string& filename) {
     return numbersVec;
 }
 
-int main(__attribute_maybe_unused__ int argc, __attribute_maybe_unused__ char** argv)
+int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 {
     if (argc < 3) {
         std::cerr << "Not enough arguments\n";
