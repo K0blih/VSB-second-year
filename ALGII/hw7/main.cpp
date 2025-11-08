@@ -63,7 +63,7 @@ std::vector<int> readIntegersFromFile(const std::string& filename) {
     return numbersVec;
 }
 
-int main([[maybe_unused]] int argc, [[maybe_unused]] char const *argv[]){
+int main([[maybe_unused]] int argc, [[maybe_unused]] char const *argv[]) {
     if (argc != 2) {
         std::cerr << "Exactly 1 argument expected.\n";
     }
