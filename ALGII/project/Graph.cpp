@@ -10,7 +10,7 @@ std::vector<std::vector<int>> readEdgesFromFile(const std::string &filename) {
     std::ifstream file(filename);
     std::vector<std::vector<int>> edges;
     if (!file.is_open()) {
-        std::cerr << "Unable to open file: " << filename << std::endl;
+        std::cerr << "Unable to open file: " << filename << "\n";
         return edges;
     }
 

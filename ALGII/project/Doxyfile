@@ -1,6 +1,6 @@
 # Project details
 PROJECT_NAME           = "Graph Center"
-PROJECT_BRIEF          = "A program that computes vertex eccentricities, and prints relevant information."
+PROJECT_BRIEF          = "A program that computes vertex eccentricities and prints relevant information."
 OUTPUT_DIRECTORY       = docs
 
 # Input settings

@@ -23,16 +23,18 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char const *argv[]) {
     std::vector<std::vector<int>> adj = buildAdjacencyList(edges, n);
     auto [centers, centerEcc] = findGraphCenter(adj);
 
-    std::cout << extractFileName(filename) << std::endl;
-    std::cout << "Number of vertices: " << n << std::endl;
-    std::cout << "Number of edges: " << edges.size() << std::endl;
-    std::cout << "Is connected: " << (isConnected(adj) ? "True" : "False") << std::endl;
+    std::cout << extractFileName(filename) << "\n";
+    std::cout << "Number of vertices: " << n << "\n";
+    std::cout << "Number of edges: " << edges.size() << "\n";
+    std::cout << "Is connected: " << (isConnected(adj) ? "True" : "False") << "\n";
 
     std::cout << "Graph center: ";
-    for (int c : centers) std::cout << c << " ";
-    std::cout << std::endl;
+    for (int c : centers) {
+        std::cout << c << " ";
+    }
+    std::cout << "\n";
 
-    std::cout << "Graph center eccentricity: " << centerEcc << std::endl;
+    std::cout << "Graph center eccentricity: " << centerEcc << "\n";
 
     return 0;
 }
