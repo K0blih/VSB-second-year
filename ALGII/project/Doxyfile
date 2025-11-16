@@ -1,0 +1,32 @@
+# Project details
+PROJECT_NAME           = "Graph Center"
+PROJECT_BRIEF          = "A program that computes vertex eccentricities, and prints relevant information."
+OUTPUT_DIRECTORY       = docs
+
+# Input settings
+INPUT                  = .
+FILE_PATTERNS          = *.cpp *.h
+RECURSIVE              = YES
+
+# Extract settings
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+
+# Output formats
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+
+# Source browsing
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = YES
+REFERENCED_BY_RELATION = YES
+REFERENCES_RELATION    = YES
+
+# Warnings
+WARN_IF_UNDOCUMENTED   = YES
+WARN_NO_PARAMDOC       = YES
+
+# Misc
+QUIET                  = NO
+GENERATE_TREEVIEW      = YES
