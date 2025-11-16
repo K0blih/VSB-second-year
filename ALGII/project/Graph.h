@@ -42,11 +42,10 @@ std::pair<int, int> farthestVertex(int start, const std::vector<std::vector<int>
  * @brief Finds the graph center and its eccentricity.
  * 
  * This function:
- * 1. Checks if graph is connected, swaps to brute force method if not
- * 2. Estimates diameter endpoints using double-sweep BFS.
- * 3. Computes a lower bound for eccentricity using distances from endpoints.
- * 4. Selects candidate vertices that may be centers.
- * 5. Computes exact eccentricity only for candidate vertices to determine the center(s).
+ * 1. Estimates diameter endpoints using double-sweep BFS.
+ * 2. Computes a lower bound for eccentricity using distances from endpoints.
+ * 3. Selects candidate vertices that may be centers.
+ * 4. Computes exact eccentricity only for candidate vertices to determine the center(s).
  * 
  * @param adj Adjacency list
  * @return Pair of (vector of center vertices, minimum eccentricity)
