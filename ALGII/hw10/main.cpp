@@ -1,6 +1,9 @@
 #include <iostream>
 #include <vector>
 #include <unordered_map>
+#include <algorithm>
+#include <sstream>
+#include <fstream>
 
 using label = int;
 
@@ -94,14 +97,83 @@ struct WeightedEdge4 {
     }
 };
 
-// simple graph representation as list of edges, pick your best representation
-using Graph = std::vector<WeightedEdge1>;
+std::vector<std::vector<int>> inputMatrix(const std::string& filename, int& n) {
+    std::ifstream file(filename);
+    std::vector<std::vector<int>> matrix;
 
-int main() {
-    // Cpp constuction and initialization is sadly quite tricky but these tend to work fine
-    [[maybe_unused]] WeightedEdge1 we1{10, 1, 2};
-    [[maybe_unused]] WeightedEdge2 we2{20, {2, 3}};
-    [[maybe_unused]] WeightedEdge3 we3{15, 3, 4};
-    [[maybe_unused]] WeightedEdge4 we4{25, 4, 5};
-    return 0;
+    if (!file.is_open()) {
+        std::cerr << "Unable to open file: " << filename << "\n";
+        return matrix;
+    }
+
+    std::string line;
+    while (std::getline(file, line)) {
+        if (line.empty()) {
+            continue;
+        }
+
+        std::stringstream ss(line);
+        std::vector<int> row;
+        int x;
+
+        while (ss >> x) {
+            row.push_back(x);
+        }
+
+        if (!row.empty()) {
+            matrix.push_back(row);
+        }
+    }
+
+    n = matrix.size();
+
+    return matrix;
+}
+
+int kruskalMST(int n, std::vector<WeightedEdge3>& edges, std::vector<WeightedEdge3>& MST_edges) {
+    std::sort(edges.begin(), edges.end());
+
+    UnionFindStructure uf(n);
+
+    int edgesUsed = 0;
+    int totalWeight = 0;
+
+    for (auto& e : edges) {
+        if (edgesUsed == n - 1) {
+            break;
+        }
+            
+        if (!uf.inTheSameSubset(e.from, e.to)) {
+            uf.setUnion(e.from, e.to);
+            edgesUsed++;
+            totalWeight += e.weight;
+
+            MST_edges.push_back(e);
+        }
+    }
+
+    return totalWeight;
+}
+
+int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
+    if (argc != 2) {
+        std::cerr << "Exactly 1 argument expected.\n";
+        return 1;
+    }
+
+    int n;
+    std::vector<std::vector<int>> matrix = inputMatrix(argv[1], n);
+
+    std::vector<WeightedEdge3> edges;
+    for (int i = 0; i < n; i++) {
+        for (int j = i + 1; j < n; j++) {
+            int w = matrix[i][j];
+            if (w != 0) {
+                edges.push_back({w, i, j});
+            }
+        }
+    } 
+
+    std::vector<WeightedEdge3> MST_edges;
+    std::cout << kruskalMST(n, edges, MST_edges) << "\n";
 }
