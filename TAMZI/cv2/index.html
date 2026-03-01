@@ -1,0 +1,85 @@
+<!doctype html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.esm.js"></script>
+  <script nomodule="" src="https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/@ionic/core/css/ionic.bundle.css" rel="stylesheet">
+  <style>
+    .form-title {
+      text-align: center;
+      margin: 0 0 16px 0;
+    }
+
+    #name,
+    #birthday {
+      max-width: 560px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    #birthday {
+      margin-top: 12px;
+      margin-bottom: 12px;
+    }
+
+    #calculate-button {
+      display: block;
+      width: 220px;
+      margin: 0 auto;
+    }
+  </style>
+  <script>
+    function calculate() {
+      const name = document.getElementById('name').value.trim();
+      const birthday = document.getElementById('birthday').value;
+      const alrt = document.getElementById('greeter');
+
+      if (!name) {
+        alrt.message = 'You did not fill in the name.';
+      } else if (!birthday) {
+        alrt.message = 'Please select a birthday date.';
+      } else {
+        const birthdayDate = new Date(birthday);
+        const birthMonth = birthdayDate.getMonth();
+        const birthDay = birthdayDate.getDate();
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (today.getMonth() === birthMonth && today.getDate() === birthDay) {
+          alrt.message = 'Happy Birthday, ' + name + '! Today is your birthday.';
+        } else {
+          let next = new Date(today.getFullYear(), birthMonth, birthDay);
+          if (next < today) {
+            next = new Date(today.getFullYear() + 1, birthMonth, birthDay);
+          }
+
+          const oneDayMs = 1000 * 60 * 60 * 24;
+          const days = Math.round((next.getTime() - today.getTime()) / oneDayMs);
+          alrt.message = name + ', there are ' + days + ' day(s) until your next birthday.';
+        }
+      }
+
+      alrt.buttons = ['Dismiss'];
+      alrt.present();
+    }
+  </script>
+</head>
+
+<body>
+  <ion-header>
+    <ion-toolbar>
+      <ion-title>Birthday calculator</ion-title>
+    </ion-toolbar>
+  </ion-header>
+  <ion-content class="ion-padding">
+    <h1 class="form-title">Enter your name</h1>
+    <ion-input aria-placeholder="e.g. John Doe" id="name" value="Richard" fill="outline"></ion-input>
+    <ion-datetime id="birthday"></ion-datetime>
+    <ion-button id="calculate-button" onclick="calculate()">Calculate</ion-button>
+  </ion-content>
+
+  <ion-alert id="greeter" header="Birthday"></ion-alert>
+</body>
+</html>
