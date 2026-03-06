@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.esm.js"></script>
+  <script nomodule src="https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/@ionic/core/css/ionic.bundle.css" rel="stylesheet">
+  <title>Persistent Textarea With History</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ion-background-color: #f6f8fc;
+    }
+
+    body {
+      margin: 0;
+    }
+
+    .page {
+      max-width: 840px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .note-field {
+      margin-bottom: 12px;
+    }
+
+    .empty-history {
+      padding: 20px 0;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <ion-app>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>Textarea with history</ion-title>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content>
+      <div class="page">
+        <ion-card>
+          <ion-card-content>
+            <ion-textarea id="note" class="note-field" label="Type here" label-placement="stacked" auto-grow="true" rows="8" fill="outline" placeholder="Write your text..."></ion-textarea>
+
+            <ion-grid>
+              <ion-row>
+                <ion-col size="12" size-md="4">
+                  <ion-button id="saveHistory" expand="block">Save to history</ion-button>
+                </ion-col>
+                <ion-col size="12" size-md="4">
+                  <ion-button id="historyButton" color="tertiary" expand="block">History</ion-button>
+                </ion-col>
+                <ion-col size="12" size-md="4">
+                  <ion-button id="clearHistory" color="medium" expand="block">Clear history</ion-button>
+                </ion-col>
+              </ion-row>
+            </ion-grid>
+          </ion-card-content>
+        </ion-card>
+      </div>
+
+      <ion-modal id="historyModal">
+        <ion-header>
+          <ion-toolbar>
+            <ion-title>History</ion-title>
+            <ion-buttons slot="end">
+              <ion-button id="closeHistory">Close</ion-button>
+            </ion-buttons>
+          </ion-toolbar>
+        </ion-header>
+
+        <ion-content>
+          <ion-list id="historyList"></ion-list>
+        </ion-content>
+      </ion-modal>
+    </ion-content>
+  </ion-app>
+
+  <script>
+    const textarea = document.getElementById("note");
+    const historyList = document.getElementById("historyList");
+    const saveHistoryButton = document.getElementById("saveHistory");
+    const clearHistoryButton = document.getElementById("clearHistory");
+    const historyButton = document.getElementById("historyButton");
+    const closeHistoryButton = document.getElementById("closeHistory");
+    const historyModal = document.getElementById("historyModal");
+
+    const SESSION_KEY = "persistentTextareaValue";
+    const HISTORY_KEY = "persistentTextareaHistory";
+
+    const readHistory = () => {
+      try {
+        return JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
+      } catch {
+        return [];
+      }
+    };
+    const writeHistory = (history) => localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    const setCurrentText = (text) => sessionStorage.setItem(SESSION_KEY, text);
+    const escapeHtml = (value) => {
+      const div = document.createElement("div");
+      div.textContent = value;
+      return div.innerHTML;
+    };
+
+    function renderHistory() {
+      const history = readHistory();
+      if (!history.length) {
+        historyList.innerHTML = '<ion-item><ion-label class="empty-history">No history entries yet.</ion-label></ion-item>';
+        return;
+      }
+
+      historyList.innerHTML = "";
+      history.forEach((entry, index) => {
+        const item = document.createElement("ion-item");
+        item.lines = "full";
+
+        const label = document.createElement("ion-label");
+
+        const meta = document.createElement("div");
+        meta.textContent = `${index + 1}. ${entry.savedAt}`;
+
+        const text = document.createElement("div");
+        text.className = "history-entry";
+        text.innerHTML = escapeHtml(entry.text);
+
+        label.appendChild(meta);
+        label.appendChild(text);
+
+        const loadButton = document.createElement("ion-button");
+        loadButton.slot = "end";
+        loadButton.size = "small";
+        loadButton.dataset.action = "load";
+        loadButton.dataset.index = index;
+        loadButton.textContent = "Load";
+
+        const deleteButton = document.createElement("ion-button");
+        deleteButton.slot = "end";
+        deleteButton.size = "small";
+        deleteButton.color = "danger";
+        deleteButton.fill = "outline";
+        deleteButton.dataset.action = "delete";
+        deleteButton.dataset.index = index;
+        deleteButton.textContent = "Delete";
+
+        item.appendChild(label);
+        item.appendChild(loadButton);
+        item.appendChild(deleteButton);
+        historyList.appendChild(item);
+      });
+    }
+
+    function restoreTextarea() {
+      const savedText = sessionStorage.getItem(SESSION_KEY);
+      if (savedText !== null) {
+        textarea.value = savedText;
+        return;
+      }
+
+      const [latest] = readHistory();
+      if (latest) {
+        textarea.value = latest.text;
+        setCurrentText(latest.text);
+      }
+    }
+
+    textarea.addEventListener("ionInput", (event) => setCurrentText(event.detail.value || ""));
+
+    historyList.addEventListener("click", (event) => {
+      const button = event.target.closest("ion-button");
+      if (!button) return;
+
+      const index = Number(button.dataset.index);
+      const action = button.dataset.action;
+      const history = readHistory();
+      const entry = history[index];
+      if (!entry) return;
+
+      if (action === "load") {
+        textarea.value = entry.text;
+        setCurrentText(entry.text);
+        historyModal.dismiss();
+        return;
+      }
+
+      history.splice(index, 1);
+      writeHistory(history);
+      renderHistory();
+    });
+
+    saveHistoryButton.addEventListener("click", () => {
+      const text = (textarea.value || "").trim();
+      if (!text) return;
+      writeHistory([{ text, savedAt: new Date().toLocaleString() }, ...readHistory()]);
+      renderHistory();
+    });
+
+    clearHistoryButton.addEventListener("click", () => {
+      localStorage.removeItem(HISTORY_KEY);
+      renderHistory();
+    });
+
+    historyButton.addEventListener("click", () => {
+      renderHistory();
+      historyModal.present();
+    });
+
+    closeHistoryButton.addEventListener("click", () => historyModal.dismiss());
+
+    restoreTextarea();
+    renderHistory();
+  </script>
+</body>
+</html>

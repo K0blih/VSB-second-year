@@ -6,9 +6,20 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0 --port 4173"
+    "preview": "vite preview --host 0.0.0.0 --port 4173",
+    "android:run": "ANDROID_SDK_ROOT=$HOME/Android/Sdk ANDROID_HOME=$HOME/Android/Sdk PATH=$HOME/Android/Sdk/platform-tools:$HOME/Android/Sdk/cmdline-tools/latest/bin:$HOME/Android/Sdk/emulator:$PATH npx cap run android --target=Medium_Phone_API_36.1 --no-sync"
   },
   "devDependencies": {
+    "@capacitor/cli": "8.1.0",
     "vite": "^7.3.1"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.1.0",
+    "@capacitor/app": "8.0.1",
+    "@capacitor/core": "8.1.0",
+    "@capacitor/haptics": "8.0.1",
+    "@capacitor/keyboard": "8.0.1",
+    "@capacitor/status-bar": "8.0.1",
+    "node": "^25.8.0"
   }
 }
