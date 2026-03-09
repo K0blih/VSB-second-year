@@ -14,3 +14,24 @@ tests
 docs
 build
 __pycache__
+
+# Build artifacts (recursive)
+**/bin/
+**/obj/
+**/build/
+**/dist/
+**/out/
+**/target/
+
+# .NET / Visual Studio
+*.user
+*.suo
+*.pdb
+*.cache
+*.dll
+*.exe
+*.deps.json
+*.runtimeconfig.json
+*.nuget.g.props
+*.nuget.g.targets
+project.assets.json
