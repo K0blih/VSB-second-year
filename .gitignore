@@ -13,6 +13,7 @@ obj
 tests
 docs
 build
+build-noasan
 __pycache__
 
 # Build artifacts (recursive)
