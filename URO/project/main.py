@@ -1,33 +1,12 @@
 import tkinter as tk
-from tkinter import ttk
+import json
+from tkinter import filedialog, messagebox, ttk
 from menu import MenuBar
 from treeview_panel import TreeviewPanel
-from detail_notebook import DetailNotebook
+from detail_notebook import DetailNotebook, TYPE_CHOICES
+from media_library import DEFAULT_DETAILS, MediaLibrary
 
-TYPE_OPTIONS = [("Vše", "all"), ("film", "film"), ("anime", "anime"), ("seriál", "seriál")]
-SAMPLE_DATA = [
-    (("Inception", "film", "sci-fi", "shlédnuto", "9/10", "2010"), "Mind-bending heist in dreams."),
-    (("Attack on Titan", "anime", "akční", "sleduji", "10/10", "2013"), "Dark fantasy with intense world building."),
-    (("Breaking Bad", "seriál", "drama", "shlédnuto", "10/10", "2008"), "Chemistry teacher turns to crime."),
-]
-MENU_ACTION_HANDLERS = {
-    "new": "_menu_new",
-    "open": "_menu_open",
-    "save": "_menu_save",
-    "export": "_menu_export",
-    "edit": "_menu_edit",
-    "delete": "_menu_delete",
-    "cut": "_menu_cut",
-    "copy": "_menu_copy",
-    "paste": "_menu_paste",
-    "view_list": "_menu_view_list",
-    "view_detail": "_menu_view_detail",
-    "track_add": "_menu_track_add",
-    "mark_watched": "_menu_mark_watched",
-    "stats_overview": "_menu_stats_overview",
-    "stats_by_genre": "_menu_stats_by_genre",
-    "about": "_menu_about",
-}
+TYPE_FILTER_OPTIONS = [("Vše", "all"), *[(value, value) for value in TYPE_CHOICES]]
 
 class MyApp:
     def __init__(self, master):
@@ -36,8 +15,7 @@ class MyApp:
         self.master.geometry("1400x900")
 
         self.current_data_id = None
-        self.all_items = []
-        self.items_by_id = {}
+        self.library = MediaLibrary()
         self.visible_item_map = {}
 
         self._attach_menu()
@@ -69,7 +47,7 @@ class MyApp:
         self.type_var = tk.StringVar(value="all")
         type_frame = ttk.Frame(controls)
         type_frame.pack(side="left", padx=(8, 0))
-        for label, value in TYPE_OPTIONS:
+        for label, value in TYPE_FILTER_OPTIONS:
             ttk.Radiobutton(
                 type_frame,
                 text=label,
@@ -84,76 +62,145 @@ class MyApp:
 
         self.detail_panel = DetailNotebook(container)
         self.detail_panel.grid(row=1, column=1, sticky="nsew")
+        self.detail_panel.bind_detail_change(self._on_details_change)
         self.detail_panel.bind_note_change(self._on_notes_change)
 
     def _load_sample_data(self):
-        self.all_items = []
-        self.items_by_id = {}
-        index = 1
-        for values, note in SAMPLE_DATA:
-            item = {"id": str(index), "values": values, "note": note}
-            self.all_items.append(item)
-            self.items_by_id[item["id"]] = item
-            index += 1
+        self.library.load_sample_data()
 
     def _on_menu_action(self, action_id):
-        handler_name = MENU_ACTION_HANDLERS.get(action_id)
-        if handler_name is None:
+        handler = getattr(self, f"_menu_{action_id}", None)
+        if handler is None:
             print(f"Unhandled menu action: {action_id}")
             return
-        handler = getattr(self, handler_name)
         handler()
 
     def _menu_new(self):
-        print("Menu action: new")
+        item = self.library.append_item(DEFAULT_DETAILS.copy(), "")
+        self._apply_filters(select_data_id=item["id"])
+        self.detail_panel.focus_name()
 
     def _menu_open(self):
-        print("Menu action: open")
+        file_path = filedialog.askopenfilename(
+            parent=self.master,
+            title="Otevřít databázi",
+            filetypes=[("JSON soubory", "*.json"), ("Všechny soubory", "*.*")],
+        )
+        if not file_path:
+            return
+        try:
+            with open(file_path, "r", encoding="utf-8") as file_handle:
+                payload = json.load(file_handle)
+        except (OSError, json.JSONDecodeError) as exc:
+            messagebox.showerror("Otevřít", f"Soubor se nepodařilo načíst.\n{exc}", parent=self.master)
+            return
+
+        items = payload.get("items")
+        if not isinstance(items, list):
+            messagebox.showerror("Otevřít", "Soubor nemá platný formát databáze.", parent=self.master)
+            return
+
+        self._load_items(items)
+        self._apply_filters()
+        messagebox.showinfo("Otevřít", f"Načteno {len(self.library.all_items)} položek.", parent=self.master)
 
     def _menu_save(self):
-        print("Menu action: save")
+        self._save_current_note()
+        file_path = filedialog.asksaveasfilename(
+            parent=self.master,
+            title="Uložit databázi",
+            defaultextension=".json",
+            filetypes=[("JSON soubory", "*.json"), ("Všechny soubory", "*.*")],
+        )
+        if not file_path:
+            return
+        payload = {"items": self.library.serialize_items()}
+        try:
+            with open(file_path, "w", encoding="utf-8") as file_handle:
+                json.dump(payload, file_handle, ensure_ascii=False, indent=2)
+        except OSError as exc:
+            messagebox.showerror("Uložit", f"Soubor se nepodařilo uložit.\n{exc}", parent=self.master)
+            return
+        messagebox.showinfo("Uložit", "Databáze byla uložena.", parent=self.master)
 
     def _menu_export(self):
-        print("Menu action: export")
-
-    def _menu_edit(self):
-        print("Menu action: edit")
+        self._save_current_note()
+        file_path = filedialog.asksaveasfilename(
+            parent=self.master,
+            title="Exportovat seznam",
+            defaultextension=".csv",
+            filetypes=[("CSV soubory", "*.csv"), ("Všechny soubory", "*.*")],
+        )
+        if not file_path:
+            return
+        try:
+            with open(file_path, "w", encoding="utf-8", newline="") as file_handle:
+                file_handle.writelines(self.library.export_rows())
+        except OSError as exc:
+            messagebox.showerror("Export", f"Export se nepodařil.\n{exc}", parent=self.master)
+            return
+        messagebox.showinfo("Export", "Export do CSV byl dokončen.", parent=self.master)
 
     def _menu_delete(self):
-        print("Menu action: delete")
-
-    def _menu_cut(self):
-        print("Menu action: cut")
-
-    def _menu_copy(self):
-        print("Menu action: copy")
-
-    def _menu_paste(self):
-        print("Menu action: paste")
+        item = self._current_item()
+        if not item:
+            messagebox.showinfo("Smazat", "Nejprve vyber položku v seznamu.", parent=self.master)
+            return
+        item_name = item["details"]["name"] or "Bez názvu"
+        confirmed = messagebox.askyesno(
+            "Smazat položku",
+            f"Opravdu chceš smazat položku „{item_name}“?",
+            parent=self.master,
+        )
+        if not confirmed:
+            return
+        self.library.delete_item(item["id"])
+        self.current_data_id = None
+        self._apply_filters()
 
     def _menu_view_list(self):
-        print("Menu action: view_list")
+        self.tree_panel.focus_tree()
 
     def _menu_view_detail(self):
-        print("Menu action: view_detail")
-
-    def _menu_track_add(self):
-        print("Menu action: track_add")
-
-    def _menu_mark_watched(self):
-        print("Menu action: mark_watched")
+        if not self.current_data_id:
+            messagebox.showinfo("Detail položky", "Nejprve vyber položku v seznamu.", parent=self.master)
+            return
+        self.detail_panel.show_detail_tab()
+        self.detail_panel.focus_name()
 
     def _menu_stats_overview(self):
-        print("Menu action: stats_overview")
+        self._show_modal("Statistiky - přehled", "\n".join(self.library.overview_lines()))
 
     def _menu_stats_by_genre(self):
-        print("Menu action: stats_by_genre")
+        self._show_modal("Statistiky - žánry", "\n".join(self.library.genre_lines()))
 
     def _menu_about(self):
-        print("Menu action: about")
+        body = (
+            "Media Database\n\n"
+            "Desktopová aplikace pro evidenci filmů, anime a seriálů.\n"
+            "Menu je napojené na správu položek, filtrování, statistiky a práci se soubory.\n\n"
+            "Autor: Richard Chovanec\n"
+            "Login: CHO0289"
+        )
+        self._show_modal("O aplikaci", body)
 
     def _on_notes_change(self, _event):
         self._save_current_note()
+        self._refresh_selected_row()
+
+    def _on_details_change(self):
+        if not self.current_data_id:
+            return
+        item = self.library.get_item(self.current_data_id)
+        if not item:
+            return
+        item = self.library.update_item_details(self.current_data_id, self.detail_panel.get_details())
+        search_text = self.search_var.get().strip().lower()
+        selected_type = self.type_var.get().strip().lower()
+        if self.library.matches_filters(item, search_text, selected_type):
+            self._refresh_selected_row()
+            return
+        self._apply_filters()
 
     def _on_filter_change(self, _event):
         self._apply_filters()
@@ -168,39 +215,66 @@ class MyApp:
     def _save_current_note(self):
         if not self.current_data_id:
             return
-        item = self.items_by_id.get(self.current_data_id)
-        if item:
-            item["note"] = self.detail_panel.get_note()
+        self.library.update_item_note(self.current_data_id, self.detail_panel.get_note())
+
+    def _current_item(self):
+        if not self.current_data_id:
+            return None
+        return self.library.get_item(self.current_data_id)
+
+    def _load_items(self, serialized_items):
+        self.current_data_id = None
+        self.library.load_items(serialized_items)
+
+    def _show_modal(self, title, body):
+        dialog = tk.Toplevel(self.master)
+        dialog.title(title)
+        dialog.transient(self.master)
+        dialog.grab_set()
+        dialog.resizable(True, True)
+        dialog.minsize(520, 320)
+
+        frame = ttk.Frame(dialog, padding=16)
+        frame.pack(fill="both", expand=True)
+        message = tk.Text(frame, wrap="word", height=12, width=60)
+        message.insert("1.0", body)
+        message.configure(state="disabled")
+        message.pack(fill="both", expand=True)
+        ttk.Button(frame, text="Zavřít", command=dialog.destroy).pack(anchor="e", pady=(12, 0))
+
+        dialog.update_idletasks()
+        width = max(520, dialog.winfo_reqwidth())
+        height = max(320, dialog.winfo_reqheight())
+        x = self.master.winfo_rootx() + max(20, (self.master.winfo_width() - width) // 2)
+        y = self.master.winfo_rooty() + max(20, (self.master.winfo_height() - height) // 2)
+        dialog.geometry(f"{width}x{height}+{x}+{y}")
+        dialog.wait_window()
+
+    def _refresh_selected_row(self):
+        tree_item_id = self.tree_panel.selected_item()
+        if not tree_item_id or tree_item_id not in self.visible_item_map:
+            return
+        item = self.visible_item_map[tree_item_id]
+        self.tree_panel.update_item(tree_item_id, self.library.tree_values_for_item(item))
 
     def _show_item(self, item):
         self.current_data_id = item["id"]
-        self.detail_panel.set_details(item["values"])
+        self.detail_panel.set_details(item["details"])
         self.detail_panel.set_note(item["note"])
 
-    def _matches_filters(self, item, search_text, selected_type):
-        values = item["values"]
-        row_text = " ".join(values).lower()
-        type_match = selected_type == "all" or values[1].lower() == selected_type
-        text_match = not search_text or search_text in row_text
-        return type_match and text_match
-
-    def _apply_filters(self):
+    def _apply_filters(self, select_data_id=None):
         self._save_current_note()
         search_text = self.search_var.get().strip().lower()
         selected_type = self.type_var.get().strip().lower()
+        filtered_items = self.library.filter_items(search_text, selected_type)
 
-        filtered_items = []
-        for item in self.all_items:
-            if self._matches_filters(item, search_text, selected_type):
-                filtered_items.append(item)
-
-        previous_data_id = self.current_data_id
+        previous_data_id = select_data_id if select_data_id is not None else self.current_data_id
         self.tree_panel.clear()
         self.visible_item_map = {}
 
         selected_tree_id = None
         for item in filtered_items:
-            tree_item_id = self.tree_panel.insert_item(item["values"])
+            tree_item_id = self.tree_panel.insert_item(self.library.tree_values_for_item(item))
             self.visible_item_map[tree_item_id] = item
             if item["id"] == previous_data_id:
                 selected_tree_id = tree_item_id

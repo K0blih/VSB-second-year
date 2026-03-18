@@ -14,6 +14,7 @@ class TreeviewPanel(ttk.Frame):
             ("stav", 3, 120),
             ("hodnoceni", 1, 90),
             ("rok", 1, 70),
+            ("poznamka", 4, 180),
         ]
 
         columns = tuple(col for col, _, _ in self.column_layout)
@@ -25,6 +26,7 @@ class TreeviewPanel(ttk.Frame):
             "stav": ("Stav", 140),
             "hodnoceni": ("Hodnocení", 90),
             "rok": ("Rok", 70),
+            "poznamka": ("Poznámka", 260),
         }
         for col, (title, width) in headings.items():
             self.tree.heading(col, text=title)
@@ -50,8 +52,8 @@ class TreeviewPanel(ttk.Frame):
         selected = self.tree.selection()
         return selected[0] if selected else None
 
-    def item_values(self, item_id):
-        return self.tree.item(item_id, "values")
+    def update_item(self, item_id, values):
+        self.tree.item(item_id, values=values)
 
     def clear(self):
         for item_id in self.tree.get_children():
@@ -61,6 +63,9 @@ class TreeviewPanel(ttk.Frame):
         self.tree.selection_set(item_id)
         self.tree.focus(item_id)
         self.tree.see(item_id)
+
+    def focus_tree(self):
+        self.tree.focus_set()
 
     def _resize_columns(self, event=None):
         total_width = event.width if event else self.tree.winfo_width()
