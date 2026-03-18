@@ -1,0 +1,120 @@
+.token-page {
+  min-height: 100%;
+  padding: 32px 16px;
+  background:
+    radial-gradient(circle at top left, rgba(255, 196, 112, 0.2), transparent 32%),
+    linear-gradient(180deg, #f3efe4 0%, #e6ecf5 100%);
+}
+
+.token-card {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 24px;
+  border: 1px solid rgba(24, 39, 75, 0.12);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 22px 60px rgba(35, 43, 62, 0.12);
+  backdrop-filter: blur(12px);
+}
+
+.token-copy h1 {
+  margin: 0;
+  font-size: 2rem;
+  line-height: 1.1;
+  color: #1f2a44;
+}
+
+.token-copy p {
+  margin: 12px 0 0;
+  color: #4d5a73;
+  line-height: 1.6;
+}
+
+.token-copy code {
+  font-family: 'Fira Code', 'Courier New', monospace;
+}
+
+.token-form {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.token-form ion-item {
+  --background: #fffdf9;
+  --border-color: rgba(31, 42, 68, 0.12);
+  --border-radius: 16px;
+  --color: #000;
+  --padding-start: 14px;
+  --inner-padding-end: 14px;
+}
+
+.token-form ion-label,
+.token-form ion-input {
+  color: #000;
+}
+
+.token-form ion-input {
+  --color: #000;
+  --placeholder-color: rgba(0, 0, 0, 0.6);
+}
+
+.submit-button {
+  margin-top: 8px;
+  --background: #1f5eff;
+  --background-hover: #184fd9;
+  --border-radius: 14px;
+  --box-shadow: 0 12px 24px rgba(31, 94, 255, 0.28);
+  font-weight: 600;
+}
+
+.results {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.result-field {
+  display: grid;
+  gap: 8px;
+  color: #1f2a44;
+  font-weight: 600;
+}
+
+.result-field input,
+.result-field textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(31, 42, 68, 0.14);
+  border-radius: 16px;
+  background: #f8faff;
+  color: #27324b;
+  font: inherit;
+}
+
+.result-field textarea {
+  resize: vertical;
+}
+
+.status-message {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(186, 26, 26, 0.08);
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .token-page {
+    padding: 20px 12px;
+  }
+
+  .token-card {
+    padding: 18px;
+    border-radius: 20px;
+  }
+
+  .token-copy h1 {
+    font-size: 1.6rem;
+  }
+}
