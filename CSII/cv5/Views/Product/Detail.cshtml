@@ -1,0 +1,24 @@
+﻿@model AddToCartForm
+
+@{
+	// Layout = "nazev";
+
+	Product p = ViewBag.Product;
+}
+
+<h2>Detail Produktu @p.Name</h2>
+<img src="@p.Photo" width="160" />
+<p>
+	@p.Description
+</p>
+
+@using(Html.BeginForm())
+{
+	<div>
+		@Html.LabelFor(x => x.Quantity)
+		@Html.TextBoxFor(x => x.Quantity)
+		@Html.ValidationMessageFor(x => x.Quantity)
+	</div>
+	@Html.HiddenFor(x => x.ProductId)
+	<button type="submit">odeslat</button>
+}

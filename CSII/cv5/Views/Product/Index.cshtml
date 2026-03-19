@@ -1,0 +1,10 @@
+﻿<h2>Seznam produktů</h2>
+
+@foreach (Product product in ViewBag.Products)
+{
+	<div>
+		<h3><a href="@Url.Action("Detail", "Product", new { id = product.Id })">@product.Name</a></h3>
+		<span>@product.Price Kc</span>
+		<p>@product.Description.Substring(0, 30) ...</p>
+	</div>
+}
