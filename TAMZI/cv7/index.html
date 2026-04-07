@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style type = "text/css">
+            html, body{
+                height: 100%;
+            }
+            body{
+                background: #000000;
+                padding: 0px;
+                margin: 0px;
+                overflow: hidden;
+            }
+            canvas{
+                display: block;
+                margin: 0;
+            }
+            #phaser-app {
+                width: 82vw;
+                height: 82vh;
+                max-width: 1200px;
+                max-height: 700px;
+                position: relative;
+                margin: 0 auto;
+            }
+            #hud {
+                position: fixed;
+                top: 16px;
+                left: 0;
+                transform: none;
+                z-index: 10;
+                color: #ffffff;
+                font: bold 24px Arial, sans-serif;
+                text-shadow: 0 2px 4px #000000;
+                pointer-events: none;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="phaser-app"></div>
+        <div id="hud">Items picked: 0</div>
+        <script defer src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.js"></script>
+        <script defer src="game.js"></script>
+    </body>
+</html>
