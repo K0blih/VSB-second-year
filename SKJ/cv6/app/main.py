@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.database import Base, engine
 from app.routes import router as files_router
+from app.schemas import HealthResponse
 
 
 app = FastAPI(title="Object Storage Service")
@@ -23,9 +24,9 @@ def index() -> str:
     return (STATIC_DIR / "index.html").read_text(encoding="utf-8")
 
 
-@app.get("/health")
-def healthcheck():
-    return {"status": "ok"}
+@app.get("/health", response_model=HealthResponse)
+def healthcheck() -> HealthResponse:
+    return HealthResponse(status="ok")
 
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

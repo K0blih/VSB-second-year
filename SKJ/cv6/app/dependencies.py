@@ -1,20 +1,35 @@
-import re
+from typing import Annotated
 
-from fastapi import Header, HTTPException, status
+from fastapi import Header, HTTPException, Path, status
+from pydantic import ValidationError
+
+from app.schemas import FilePathParams, UserHeader
 
 
-USER_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]+$")
-
-
-def get_current_user_id(x_user_id: str | None = Header(default=None)) -> str:
-    if not x_user_id:
+def get_current_user_id(
+    x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None,
+) -> str:
+    if x_user_id is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="X-User-Id header is required.",
         )
-    if not USER_ID_PATTERN.fullmatch(x_user_id):
+    try:
+        return UserHeader(x_user_id=x_user_id).x_user_id
+    except ValidationError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="X-User-Id may only contain letters, numbers, underscores, and hyphens.",
-        )
-    return x_user_id
+        ) from exc
+
+
+def get_file_id(
+    file_id: Annotated[str, Path(description="Unique file identifier.")],
+) -> str:
+    try:
+        return FilePathParams(file_id=file_id).file_id
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid file identifier format.",
+        ) from exc

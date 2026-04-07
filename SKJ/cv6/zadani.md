@@ -1,119 +1,134 @@
-🎯 Cíl
+Perzistence a validace dat
 
-Cílem tohoto cvičení je navrhnout a implementovat základní verzi object storage služby, inspirované cloudovými úložišti (např. Amazon S3).
+Na základě implementace z předcházejícího cvičení rozšíříme službu do podoby pokročilejšího object storage systému.
 
-Výsledkem bude backendová služba, která umožní:
+Na tomto cvičení si kážeme perzistentní vrstvu v podobě SQL knihovny SQLAlchemy. A validaci vstupů pomocí knihovny Pydantic.
+Perzistence s Object Relational Mapping (ORM)
 
-    nahrávání souborů
-    jejich ukládání na disk
-    správu metadat
-    stažení a smazání souborů
+ORM je programovací technika, která automaticky převádí data mezi relační databází a objektově orientovaným kódem. Existuje spousta knihoven pro ORM v různých jazycích, např. Entitiy Framework v C#, Hibernate.
 
-Tato služba bude ve výsledku součástí většího projektu (mini cloud platformy) a bude sloužit jako úložiště vstupních a výstupních dat pro další komponenty.
+V Pythonu existuje opět několik implementací ORM. K nejznámějším se řadí právě SQLAlchemy nebo ORM vrstva ve frameworku Django.
 
-Při realizaci se předpokládá využití AI nastrojů dle Vašeho výběru.
+ORM nám zajištujě to, že nemusíme psát přímo SQL dotazy v Python kódu. Dotazy do DB se překládají automaticky za použití speciálních tříd (tzv. modely), které definují DB tabulky. Instance takových tříd jsou pak jednotlivými řádky (velmi zjednodušeně řečeno a platí to pro návrhový vzor Active Record).
 
-Jedná se o týmovou úlohu. Na cvičení utvořte týmy o velikosti 1 - 3 členů. Ideálně si sesedněte a řešte úlohu společně.
-🧱 Kontext projektu
+Pro základní práci s DB si můžeme nadefinovat soubor database.py:
 
-Implementovaná služba bude využita jako:
+from sqlalchemy import create_engine
+from sqlalchemy.orm import DeclarativeBase
 
-    obecné cloudové úložiště pro uživatele
-    úložiště vstupů pro výpočetní úlohy (jobs)
-    úložiště výstupů
+SQLALCHEMY_DATABASE_URL = "sqlite:///./todo.db"
 
-🧩 Zadání (část realizovaná na cvičení)
-1. Návrh API
+engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}, echo=True)
 
-Navrhněte REST API pro práci se soubory:
+class Base(DeclarativeBase):
+    pass
 
-POST /files/upload
-GET /files/{id}
-DELETE /files/{id}
-GET /files
+Z SQLALCHEMY_DATABASE_URL je patrné, že budeme používat SQLite, proměnná engine pak reprezentuje připojení do DB (parametr echo=True zajistí, že v konzoli uvidíme tzv. raw SQL příkazy). Námi defonované DB modely pak budou dědit ze třídy Base, která dědí z obecné třídy DeclarativeBase z SQLAlchemy.
 
-2. Upload souboru
+Poté můžeme definovat vlastní DB modely např. v souboru models.py:
 
-Implementujte endpoint:
+from database import Base
+from sqlalchemy import String, Boolean
+from sqlalchemy.orm import Mapped, mapped_column
 
-POST /files/upload
+class Task(Base):
+    __tablename__ = "tasks"
 
-Požadavky:
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    title: Mapped[str] = mapped_column(String(50))
+    description: Mapped[str] = mapped_column(String, nullable=True)
+    completed: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    přijímá soubor pomocí multipart/form-data
-    uloží soubor na disk
-    vygeneruje unikátní identifikátor souboru
-    vrátí metadata ve formátu:
+    def __repr__(self) -> str:
+        return f"Task(id={self.id}, title={self.title}, description={self.description}, completed={self.completed})"
 
-{
-  "id": "string",
-  "filename": "string",
-  "size": 1234
-}
+Naše třída Task dědí z Base. __tablename__ specifikuje jméno tabulky v SQL databázi. Jednotlivé atributy třídy se mapují na sloupce v tabulce. Datový typ je určen pomocí type hintů Mapped[typ] a následným použitím mapped_column s příslušnými parametry. Pak se např. typ String(50) přeloží v na DB typ VARCHAR(50).
 
-Uložení informací o souborech zatím můžete realizovat jako jednoduchý JSON soubor. Pokud chcete, můžete použít rovnou i SQL databázi za použití knihovny SQLAlchemy.
-3. Ukládání souborů
+V main.py musíme vytvořit naši DB:
 
-Navrhněte strukturu ukládání na disku, například:
+from database import engine
+import models
 
-storage/
-   <user_id>/
-       <file_id>
+models.Base.metadata.create_all(bind=engine)
 
-Požadavky:
+def get_db():
+    db = Session(bind=engine.connect())
+    try:
+        yield db
+    finally:
+        db.close()
 
-    soubory různých uživatelů musí být oddělené
-    nesmí docházet ke kolizím názvů
+Můžeme pak vytvořit záznam do DB v našem FastAPI endpointu např. takto:
 
-4. Metadata
+@app.post("/db-tasks/")
+def create_db_task(task, db: Session = Depends(get_db)):
+    db_task = models.Task(title=task.title, description=task.description, completed=task.completed)
+    db.add(db_task)
+    db.commit()
+    db.refresh(db_task)
 
-Metadata ukládejte do databáze.
+A nebo také vyhledávat:
 
-Minimální struktura:
+@app.get("/db-tasks/")
+def get_db_tasks(db: Session = Depends(get_db)):
+    return db.query(models.Task).all()
 
-File:
-- id
-- user_id
-- filename
-- path
-- size
-- created_at
+Zadání do našeho S3 uložiště
 
-5. Stažení souboru
+Do svého aktuálního řešení naimplementujte ukládání metadat do databáze místo do JSON souboru.
+Validace dat - Pydantic
 
-Implementujte endpoint:
+Vzhledem k dynamické typovosti jazyka Python je častým řešením speciálně návratových hodnot používat slovníky různé "složitosti" a pak to dopadá třeba takto :-(.
 
-GET /files/{id}
+Řešením je striktní používání type hintů, které jsou sice v klasickém Pythhonu jeho runtime ignorovány, ale s využitím knohovny jako je Pydantic je možné je kontrolovat za běhu a vyvolávat tak chyby.
 
-Požadavky: - vrací obsah souboru - ověřuje, že uživatel má k souboru přístup
-6. Smazání souboru
+from pydantic import BaseModel, Field
 
-Implementujte:
 
-DELETE /files/{id}
+class TaskCreate(BaseModel):
+    title: str = Field(..., title="Task Title", description="The title of the task",
+                       min_length=3, max_length=50)
 
-Požadavky: - smaže soubor ze storage - odstraní metadata z databáze
-🧰 Použité technologie
+    description: str | None = Field(
+        None, title="Task Description",
+        description="The description of the task")
 
-Použijte následující technologie, ale můžete použít i další:
+    completed: bool = Field(
+        False,
+        title="Task Completed",
+        description="Whether the task is completed or not")
 
-    FastAPI
-    SQLAlchemy
-    python-multipart
-    aiofiles
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "title": "Buy groceries",
+                "description": "Milk, Bread, Eggs",
+                "completed": False
+            }
+        }
+    }
 
-🏁 Minimální výstup ze cvičení
+Zde definujeme náš typ TaskCreate, který dědí z Pydantic modelu BaseModel. Třída pak obsahuje atributy, které jsou anotovány standartnímy typy z Pythonu a je jim přiřazena hodnota Field z Pydanticu, která zajistí dané omezení na zvolený datový typ.
 
-    funkční API server bez SQLAlchemy
-    upload souboru
-    uložení na disk
-    uložení metadat
-    možnost stažení souboru
+Když takovou třídu požijeme v našem endpointu, všimněte si, že se toto projeví i v lokální dokumentaci k danému endpointu:
 
-🏠 Domácí úloha (rozšíření) - Bude součástí projektu
+@app.post("/db-tasks/", response_model=TaskCreate, tags=["db-tasks"],
+          summary="Create a new task in the database",
+          response_description="The created task")
+def create_db_task(task: TaskCreate, db: Session = Depends(get_db)):
+    db_task = models.Task(title=task.title, description=task.description, completed=task.completed)
+    db.add(db_task)
+    db.commit()
+    db.refresh(db_task)
+    return db_task
 
-Domácí úloha bude upřesněna později.
-🧠 AI část (povinná)
+Konkrétně se náš Pydantic model objevuje v parametru response_model a také jako type hint přímo v parametru funkce create_db_task.
+Zadání pro validaci dat
+
+Pro všechny vstupy a výstupy, tedy parametry endpointů a návratové hodnoty z nich, používejte Pydantic modely.
+
+Nadefinujte si jednotlivé modely pro requesty i response a nepoužívejte jen obyčejné "raw" slovníky (dict) jako návratové hodnoty.
+AI report
 
 Součástí odevzdání bude krátký report ve formátu Markdown, který bude obsahovat:
 
@@ -122,19 +137,3 @@ Součástí odevzdání bude krátký report ve formátu Markdown, který bude o
     co AI vygenerovala správně
     co bylo nutné opravit
     jaké chyby AI udělala
-
-🧪 Testování
-
-Doporučení:
-
-    použijte curl nebo Postman
-
-Příklady:
-
-    pro POST:
-
-curl -F "file=@test.txt" http://localhost:8000/files/upload
-
-    pro DELETE
-
-curl -X DELETE http://localhost:8000/files/123

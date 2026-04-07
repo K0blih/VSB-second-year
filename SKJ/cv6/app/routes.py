@@ -1,11 +1,12 @@
 from pathlib import Path
+from typing import Annotated
 
 from sqlalchemy.orm import Session
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 from fastapi.responses import FileResponse
 
-from app.dependencies import get_current_user_id
+from app.dependencies import get_current_user_id, get_file_id
 from app.database import get_db
 from app.models import File as FileModel
 from app.schemas import FileMetadataResponse, FileUploadResponse
@@ -29,7 +30,7 @@ async def upload_file(
     file: UploadFile = File(...),
     user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
-):
+) -> FileUploadResponse:
     if not file.filename:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -50,7 +51,8 @@ async def upload_file(
         )
         db.add(file_record)
         db.commit()
-        return FileUploadResponse(id=file_id, filename=file.filename, size=size)
+        db.refresh(file_record)
+        return FileUploadResponse.model_validate(file_record)
     except Exception as exc:
         db.rollback()
         if saved_path is not None:
@@ -65,7 +67,7 @@ async def upload_file(
 def list_files(
     user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
-):
+) -> list[FileMetadataResponse]:
     files = (
         db.query(FileModel)
         .filter(FileModel.user_id == user_id)
@@ -77,10 +79,10 @@ def list_files(
 
 @router.get("/{file_id}")
 def download_file(
-    file_id: str,
+    file_id: Annotated[str, Depends(get_file_id)],
     user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
-):
+) -> FileResponse:
     file_record = get_owned_file(db, user_id, file_id)
     if not Path(file_record.path).exists():
         raise HTTPException(
@@ -92,10 +94,10 @@ def download_file(
 
 @router.delete("/{file_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_file(
-    file_id: str,
+    file_id: Annotated[str, Depends(get_file_id)],
     user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
-):
+) -> Response:
     file_record = get_owned_file(db, user_id, file_id)
     storage_service.delete_file(file_record.path)
     db.delete(file_record)
