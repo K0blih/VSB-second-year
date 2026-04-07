@@ -6,8 +6,9 @@
 !Makefile
 !README
 !LICENSE
-.vscode
-.vs
+*.vscode
+*.vs
+*.codex
 bin
 obj
 tests
@@ -36,3 +37,19 @@ __pycache__
 *.nuget.g.props
 *.nuget.g.targets
 project.assets.json
+
+# Qt projects in URO/QTprojects
+URO/QTprojects/**/.qtcreator/
+URO/QTprojects/**/.qtc_clangd/
+URO/QTprojects/**/.qmake.stash
+URO/QTprojects/**/*.pro.user
+URO/QTprojects/**/build/
+URO/QTprojects/**/Makefile
+URO/QTprojects/**/moc_*.cpp
+URO/QTprojects/**/moc_predefs.h
+URO/QTprojects/**/ui_*.h
+URO/QTprojects/**/*.o
+URO/QTprojects/**/*.obj
+URO/QTprojects/**/compile_commands.json
+URO/QTprojects/calc/calc
+URO/QTprojects/form/form
