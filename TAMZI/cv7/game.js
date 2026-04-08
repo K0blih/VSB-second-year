@@ -4,8 +4,8 @@ var config = {
         parent: 'phaser-app',
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
-        width: 1400,
-        height: 800
+        width: 512,
+        height: 512
     },
     physics: {
         default: 'arcade',
@@ -106,7 +106,19 @@ function create() {
     this.physics.add.overlap(player, collectible, collectItem, null, this);
     this.physics.add.overlap(player, bombs, hitBomb, null, this);
     this.physics.add.overlap(player, robot, hitRobot, null, this);
-    hud = document.getElementById('hud');
+
+    hud = this.add.text(0, 16, 'Items picked: 0', {
+        fontFamily: 'Arial',
+        fontSize: '24px',
+        fontStyle: 'bold',
+        color: '#ffffff',
+        stroke: '#000000',
+        strokeThickness: 4
+    });
+    hud.setOrigin(0.5, 0);
+    hud.setDepth(1000);
+
+    positionHud();
 
     this.anims.create({
         key: 'walk',
@@ -151,29 +163,23 @@ function create() {
     updateText.call(this);
 }
 
-function positionHud() {
-    if (!hud || !game || !game.canvas) {
-        return;
-    }
-
-    var rect = game.canvas.getBoundingClientRect();
-    hud.style.left = (rect.left + rect.width / 2 - hud.offsetWidth / 2) + 'px';
-    hud.style.top = (rect.top + 16) + 'px';
-}
-
 function fitCameraToMap() {
     if (!game || !game.scene || !game.scene.scenes.length || !map) {
         return;
     }
 
     var camera = game.scene.scenes[0].cameras.main;
-    var zoomX = camera.width / map.widthInPixels;
-    var zoomY = camera.height / map.heightInPixels;
-    var zoom = Math.min(zoomX, zoomY);
-
     camera.stopFollow();
-    camera.setZoom(zoom);
+    camera.setZoom(1);
     camera.centerOn(map.widthInPixels / 2, map.heightInPixels / 2);
+}
+
+function positionHud() {
+    if (!hud || !map) {
+        return;
+    }
+
+    hud.setPosition(map.widthInPixels / 2, 16);
 }
 
 function createBombs(count) {
@@ -284,7 +290,7 @@ function update(time) {
 
 function updateText(time) {
     if (hud) {
-        hud.textContent = 'Items picked: ' + score;
+        hud.setText('Items picked: ' + score);
     }
     positionHud();
 }

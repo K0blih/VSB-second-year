@@ -12,35 +12,25 @@
                 padding: 0px;
                 margin: 0px;
                 overflow: hidden;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             canvas{
                 display: block;
                 margin: 0;
             }
             #phaser-app {
-                width: 82vw;
-                height: 82vh;
-                max-width: 1200px;
+                width: min(82vw, 82vh);
+                height: min(82vw, 82vh);
+                max-width: 700px;
                 max-height: 700px;
                 position: relative;
-                margin: 0 auto;
-            }
-            #hud {
-                position: fixed;
-                top: 16px;
-                left: 0;
-                transform: none;
-                z-index: 10;
-                color: #ffffff;
-                font: bold 24px Arial, sans-serif;
-                text-shadow: 0 2px 4px #000000;
-                pointer-events: none;
             }
         </style>
     </head>
     <body>
         <div id="phaser-app"></div>
-        <div id="hud">Items picked: 0</div>
         <script defer src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.js"></script>
         <script defer src="game.js"></script>
     </body>
