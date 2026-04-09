@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/">
+        <file>images/earth_titan.xpm</file>
+        <file>images/flame_dragon.xpm</file>
+        <file>images/forest_guardian.xpm</file>
+        <file>images/storm_relic.xpm</file>
+        <file>images/wind_rider.xpm</file>
+    </qresource>
+</RCC>
