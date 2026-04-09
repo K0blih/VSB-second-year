@@ -1,0 +1,37 @@
+﻿<Window x:Class="cv7.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:cv7"
+        mc:Ignorable="d"
+        Title="Moje prvni aplikace" Height="450" Width="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition />
+            <RowDefinition Height="25"/>
+        </Grid.RowDefinitions>
+        <DataGrid Grid.Row="0" ItemsSource="{Binding Customers}" 
+                  IsReadOnly="True" AutoGenerateColumns="False">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Jmeno" Binding="{Binding FirstName}" />
+                <DataGridTextColumn Header="Prijmeni" Binding="{Binding LastName}" />
+                <DataGridTextColumn Header="Vek" Binding="{Binding Age}" />
+
+                <DataGridTemplateColumn Header="Tlacitka">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="odstranit" Click="RemoveCustomer"/>
+                                <Button Content="anonymizovat" Click="AnonymizeCustomer"/>
+                                <Button Content="upravit" Click="EditCustomer" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <Button Grid.Row="1" Content="pridat zakaznika" Click="AddCustomer"/>
+    </Grid>
+</Window>
