@@ -1,139 +1,141 @@
-Perzistence a validace dat
+V minulém cvičení jsme naimplementovali perzistenci dat pomocí SQLAlchemy a validaci přes Pydantic. Naše databáze se ale bude vyvíjet. V reálném světě nemůžeme při každé změně modelů smazat celou databázi (např. todo.db) a vytvořit ji znovu – přišli bychom o všechna uživatelská data.
 
-Na základě implementace z předcházejícího cvičení rozšíříme službu do podoby pokročilejšího object storage systému.
+Řešením jsou databázové migrace. Nástroj na správu migrací se stará o postupné aplikování (a případně i vracení) změn ve struktuře databáze (přidávání tabulek, sloupců, indexů).
 
-Na tomto cvičení si kážeme perzistentní vrstvu v podobě SQL knihovny SQLAlchemy. A validaci vstupů pomocí knihovny Pydantic.
-Perzistence s Object Relational Mapping (ORM)
+V ekosystému SQLAlchemy je standardem knihovna Alembic.
+Co jsou databázové migrace a proč je potřebujeme?
 
-ORM je programovací technika, která automaticky převádí data mezi relační databází a objektově orientovaným kódem. Existuje spousta knihoven pro ORM v různých jazycích, např. Entitiy Framework v C#, Hibernate.
+Představte si, že máte spuštěnou aplikaci (například e-shop), ve které je již zaregistrováno tisíce uživatelů. Vaše SQLAlchemy třída reprezentující uživatele vypadá, např. takto:
 
-V Pythonu existuje opět několik implementací ORM. K nejznámějším se řadí právě SQLAlchemy nebo ORM vrstva ve frameworku Django.
+class User(Base):
+    __tablename__ = "users"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(50))
 
-ORM nám zajištujě to, že nemusíme psát přímo SQL dotazy v Python kódu. Dotazy do DB se překládají automaticky za použití speciálních tříd (tzv. modely), které definují DB tabulky. Instance takových tříd jsou pak jednotlivými řádky (velmi zjednodušeně řečeno a platí to pro návrhový vzor Active Record).
+Nyní přijde zadání, že uživatelům potřebujeme začít posílat upozornění, a proto musíme do databáze nutně přidat sloupec email. Upravíme tedy model v Pythonu a přidáme nový atribut do třídy User. Ale jak tuto změnu dostaneme do existující databáze?
 
-Pro základní práci s DB si můžeme nadefinovat soubor database.py:
+Špatné řešení: Smažeme soubor database.db a necháme Base.metadata.create_all() vytvořit novou, čistou databázi s novým sloupcem.
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase
+Výsledek: Databáze má správnou strukturu, ale právě jsme nevratně smazali data všech tisíců zákazníků.
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./todo.db"
+    Poznámka: Poněkud lepší by bylo si databázi zazálohovat a pak do nově vytvořené databáze opětovně nahrát data. Toto obšem vyžaduje speciální script, který data upraví ze staré databáze do nové, neboť nyní se již databázová schémata neshodují a není možné databázi "jen tak nakopírovat" do nové.
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}, echo=True)
+Lepší řešení: Zdrojový kód tabulky User upravíme a commitneme. Pak se na produkčním systému zastaví aplikace, v databázi se zavolá SQL příkaz ALTER TABLE users ADD COLUMN email VARCHAR(100); a aplikace se opět spustí na produkčním stroji.
 
-class Base(DeclarativeBase):
-    pass
+Výsledek: Do tabulky se přidá nový sloupec a stará data zůstanou nedotčena.
 
-Z SQLALCHEMY_DATABASE_URL je patrné, že budeme používat SQLite, proměnná engine pak reprezentuje připojení do DB (parametr echo=True zajistí, že v konzoli uvidíme tzv. raw SQL příkazy). Námi defonované DB modely pak budou dědit ze třídy Base, která dědí z obecné třídy DeclarativeBase z SQLAlchemy.
+Správný řešení: Jakmile commitneme zdrojový kód s upravenou třídou User změna se bude aplikovat na produkčním systému, kde se použije migrační nástroj, který za nás vytvoří SQL příkaz ALTER TABLE users ADD COLUMN email VARCHAR(100);. Migrační nástoj by také měl zajistit, že se jednoduše "nepřepíšeme" a databázi tím neporušíme.
 
-Poté můžeme definovat vlastní DB modely např. v souboru models.py:
+Výsledek: Do tabulky se přidá nový sloupec a stará data zůstanou nedotčena. (Je stejný jako v předchozím řešení, jen jsme si řešením více jisti).
 
-from database import Base
-from sqlalchemy import String, Boolean
-from sqlalchemy.orm import Mapped, mapped_column
+    Poznámka: Automatická migrace by se měla otestovat v rámci Continuous Integration/Contunous Delivery (CI/CD) nástroje.
 
-class Task(Base):
-    __tablename__ = "tasks"
+A přesně tento bezpečný přechod řeší databázové migrace. Můžete si je představit jako systém pro správu verzí (něco jako Git), ale pro schéma vaší databáze.
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    title: Mapped[str] = mapped_column(String(50))
-    description: Mapped[str] = mapped_column(String, nullable=True)
-    completed: Mapped[bool] = mapped_column(Boolean, default=False)
+Místo abyste psali SQL příkazy pro změnu tabulek ručně, použijeme nástroj Alembic. Ten se podívá na vaše aktuální Python modely, porovná je se současným stavem databáze a automaticky vygeneruje migrační skript – soubor s kódem, který databázi postupně a bezpečně upraví (upgraduje) na novou verzi, aniž byste přišli o drahocenná data.
+Inicializace Alembicu
 
-    def __repr__(self) -> str:
-        return f"Task(id={self.id}, title={self.title}, description={self.description}, completed={self.completed})"
+Alembic se inicializuje přes příkazovou řádku ve složce vašeho projektu:
 
-Naše třída Task dědí z Base. __tablename__ specifikuje jméno tabulky v SQL databázi. Jednotlivé atributy třídy se mapují na sloupce v tabulce. Datový typ je určen pomocí type hintů Mapped[typ] a následným použitím mapped_column s příslušnými parametry. Pak se např. typ String(50) přeloží v na DB typ VARCHAR(50).
+$ alembic init alembic
 
-V main.py musíme vytvořit naši DB:
+Tím se vytvoří složka alembic a soubor alembic.ini. Abyste mohli migrace generovat automaticky na základě vašich SQLAlchemy modelů, je nutné upravit soubor alembic/env.py tak, aby Alembic viděl vaše modely (importovat Base.metadata) a správně nastavit URL k vaší databázi v alembic.ini.
 
-from database import engine
-import models
+Základní workflow pak vypadá takto: 1. Upravíte/vytvoříte SQLAlchemy modely v kódu. 2. Vygenerujete migrační skript: alembic revision --autogenerate -m "popis zmeny" 3. Zkontrolujete vygenerovaný skript ve složce alembic/versions/. 4. Aplikujete migraci na databázi: alembic upgrade head
+Úkol 1: Zavedení Bucketů (Migrace 1)
 
-models.Base.metadata.create_all(bind=engine)
+V Amazon S3 neexistují objekty jen tak "ve vakuu", ale jsou vždy součástí tzv. Bucketů (kbelíků/složek).
 
-def get_db():
-    db = Session(bind=engine.connect())
-    try:
-        yield db
-    finally:
-        db.close()
+    Vytvořte nový SQLAlchemy model Bucket, který bude obsahovat:
+        id (Primary Key)
+        name (String, unikátní název bucketu)
+        created_at (DateTime, datum vytvoření)
+    Upravte stávající model pro uložení objektu (souboru). Přidejte k němu relaci na Bucket. Bude obsahovat nový sloupec bucket_id (Foreign Key).
+    Vygenerujte a aplikujte první migraci.
+    Vytvořte Pydantic modely a FastAPI endpointy pro vytváření bucketů (POST /buckets/) a výpis objektů v konkrétním bucketu (GET /buckets/{bucket_id}/objects/). Ve své podstatě jde o listování obsahu bucketů.
 
-Můžeme pak vytvořit záznam do DB v našem FastAPI endpointu např. takto:
+Úkol 2: Účtování za přenos dat (Migrace 2)
 
-@app.post("/db-tasks/")
-def create_db_task(task, db: Session = Depends(get_db)):
-    db_task = models.Task(title=task.title, description=task.description, completed=task.completed)
-    db.add(db_task)
-    db.commit()
-    db.refresh(db_task)
+Provozovatelé cloudových úložišť si účtují poplatky nejen za uložené místo, ale i za přenesená data (bandwidth).
 
-A nebo také vyhledávat:
+    Rozšiřte stávající model Bucket o nový sloupec bandwidth_bytes (Integer, defaultně 0).
+    Vygenerujte a aplikujte druhou migraci. (Všimněte si, že se tabulka upraví, ale existující buckety a objekty z předchozího úkolu v DB zůstanou!)
+    Upravte vaše existující endpointy pro nahrávání (upload) a stahování (download/read) metadat objektů. Každý úspěšný request musí updatovat hodnotu bandwidth_bytes u příslušného bucketu (přičíst velikost objektu k celkovému účtu).
+    Vytvořte endpoint GET /buckets/{bucket_id}/billing/, který pomocí Pydantic modelu vrátí aktuální stav účtu za data pro daný bucket.
 
-@app.get("/db-tasks/")
-def get_db_tasks(db: Session = Depends(get_db)):
-    return db.query(models.Task).all()
+Úkol 2: Pokročilé účtování za přenos dat(Advanced Billing)
 
-Zadání do našeho S3 uložiště
+Provozovatelé cloudových úložišť si účtují poplatky nejen za uložené místo, ale i za přenesená data (bandwidth). V cloudu není "data transfer" jedna hodnota. Musíme rozlišovat, odkud a kam data tečou.
 
-Do svého aktuálního řešení naimplementujte ukládání metadat do databáze místo do JSON souboru.
-Validace dat - Pydantic
+Pravidla pro účtování za přenos dat: 1. Storage (Data at rest): Platí se za průměrné množství uložených dat (v GB). 2. Ingress (Příchozí): Data tekoucí z internetu k nám. Většinou bývají zdarma, ale my je budeme pro účely cvičení logovat. 3. Egress (Odchozí): Data tekoucí od nás do internetu. Toto je nejdražší položka. 4. Internal (V rámci cloudu): Pokud data tečou mezi našimi službami (např. ze S3 do EC2 v rámci stejného regionu), jsou zdarma.
+Technická realizace (Migrace 2)
 
-Vzhledem k dynamické typovosti jazyka Python je častým řešením speciálně návratových hodnot používat slovníky různé "složitosti" a pak to dopadá třeba takto :-(.
+    Model Bucket: Rozšiřte o sloupce: * current_storage_bytes: Aktuální součet velikostí všech (nesmazaných) objektů. * ingress_bytes: Kumulativní součet všech příchozích přenosů. * egress_bytes: Kumulativní součet všech odchozích přenosů do internetu. * internal_transfer_bytes: Kumulativní součet přenosů v rámci cloudu (pro statistiku).
 
-Řešením je striktní používání type hintů, které jsou sice v klasickém Pythhonu jeho runtime ignorovány, ale s využitím knohovny jako je Pydantic je možné je kontrolovat za běhu a vyvolávat tak chyby.
+    Logika "Internal vs External": V reálném světě se to pozná podle IP adresy. Pro naše účely budeme simulovat interní provoz pomocí HTTP Headeru. * Pokud request obsahuje hlavičku X-Internal-Source: true, započítá se přenos do internal_transfer_bytes. * Pokud hlavička chybí, jde o externí provoz (Ingress/Egress).
 
-from pydantic import BaseModel, Field
+    Update při operacích: * POST /upload: Zvýší storage_bytes a (pokud není interní) zvýší ingress_bytes. * GET /download: Pokud není interní, zvýší egress_bytes. * DELETE /object: Sníží storage_bytes (pokud je Soft Delete aktivní, storage se stále počítá, dokud není objekt smazán definitivně).
 
+Úkol 3: Ochrana proti nechtěnému smazání - Soft Delete
 
-class TaskCreate(BaseModel):
-    title: str = Field(..., title="Task Title", description="The title of the task",
-                       min_length=3, max_length=50)
+V cloudu znamená smazání často jen přesun do "koše" nebo zneviditelnění objektu, aby bylo možné ho po určitou dobu obnovit. K tomu se používá technika Soft Delete.
 
-    description: str | None = Field(
-        None, title="Task Description",
-        description="The description of the task")
+    Přidejte do modelu vašeho objektu/souboru sloupec is_deleted (Boolean, default bude False).
+    Vygenerujte a aplikujte třetí migraci.
+    Upravte endpoint pro smazání objektu (DELETE /objects/{object_id}). Místo fyzického odstranění záznamu z databáze (db.delete()) pouze nastavte is_deleted = True.
+    Upravte endpointy pro výpis objektů. Musí nyní ve výchozím stavu filtrovat data a vracet pouze objekty, které nejsou smazané.
 
-    completed: bool = Field(
-        False,
-        title="Task Completed",
-        description="Whether the task is completed or not")
+Úkol 4: Billing za API Requesty (Bonus / Rozšíření)
 
-    model_config = {
-        "json_schema_extra": {
-            "example": {
-                "title": "Buy groceries",
-                "description": "Milk, Bread, Eggs",
-                "completed": False
-            }
-        }
-    }
+Cloudoví provideři neúčtují jen za přenesené bajty, ale i za samotné "volání" API. * PUT, POST, LIST: Jsou dražší (mění stav systému, vyžadují víc zápisů do DB). * GET: Jsou levnější.
 
-Zde definujeme náš typ TaskCreate, který dědí z Pydantic modelu BaseModel. Třída pak obsahuje atributy, které jsou anotovány standartnímy typy z Pythonu a je jim přiřazena hodnota Field z Pydanticu, která zajistí dané omezení na zvolený datový typ.
+    Migrace: Přidejte sloupce count_write_requests a count_read_requests.
+    Middleware/Decorator: Implementujte logiku, která při každém volání příslušného endpointu inkrementuje dané počítadlo v databázi.
 
-Když takovou třídu požijeme v našem endpointu, všimněte si, že se toto projeví i v lokální dokumentaci k danému endpointu:
+Nápověda: Jak správně propojit Alembic s vaším kódem
 
-@app.post("/db-tasks/", response_model=TaskCreate, tags=["db-tasks"],
-          summary="Create a new task in the database",
-          response_description="The created task")
-def create_db_task(task: TaskCreate, db: Session = Depends(get_db)):
-    db_task = models.Task(title=task.title, description=task.description, completed=task.completed)
-    db.add(db_task)
-    db.commit()
-    db.refresh(db_task)
-    return db_task
+Aby mohl Alembic automaticky generovat migrace (--autogenerate), musí znát dvě věci: 1. Jak vypadají vaše SQLAlchemy modely (tzv. metadata). 2. Kde leží vaše databáze.
 
-Konkrétně se náš Pydantic model objevuje v parametru response_model a také jako type hint přímo v parametru funkce create_db_task.
-Zadání pro validaci dat
+Po spuštění alembic init alembic je nutno provést dvě klíčové úpravy:
+1. Úprava alembic.ini
 
-Pro všechny vstupy a výstupy, tedy parametry endpointů a návratové hodnoty z nich, používejte Pydantic modely.
+Najděte řádek začínající sqlalchemy.url a nastavte správnou cestu k vaší SQLite databázi.
 
-Nadefinujte si jednotlivé modely pro requesty i response a nepoužívejte jen obyčejné "raw" slovníky (dict) jako návratové hodnoty.
-AI report
+# Příklad v alembic.ini
+sqlalchemy.url = sqlite:///./todo.db
 
-Součástí odevzdání bude krátký report ve formátu Markdown, který bude obsahovat:
+    Poznámka: Pozor na relativní cesty. ./todo.db znamená, že soubor databáze leží ve složce, odkud spouštíte příkaz alembic.
 
-    jaké nástroje AI byly použity
-    příklady promptů
-    co AI vygenerovala správně
-    co bylo nutné opravit
-    jaké chyby AI udělala
+2. Úprava alembic/env.py
+
+Otevřete vygenerovaný soubor env.py a naimportujte váš Base model z FastAPI aplikace. Aby Python správně našel vaše soubory, je někdy nutné přidat kořenovou složku projektu do sys.path.
+
+import sys
+import os
+from logging.config import fileConfig
+from sqlalchemy import engine_from_config
+from sqlalchemy import pool
+from alembic import context
+
+# 1. Přidání aktuální složky do cesty, aby šly importovat vaše modely
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+# 2. Import vaší Base třídy (změňte 'models' podle názvu vašeho souboru)
+from models import Base
+
+# tento kód je generovaný Alembicem...
+config = context.config
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
+
+# 3. Nastavení target_metadata na metadata vašich modelů
+target_metadata = Base.metadata
+
+# ... zbytek souboru zůstává stejný (funkce run_migrations_offline a run_migrations_online)
+
+Častá chyba: Pokud vám Alembic hlásí ImportError, zkontrolujte, zda importujete Base ze správného souboru a zda máte správně vyřešený sys.path. Pokud vám vygeneruje prázdnou migraci (bez přidání tabulek), s největší pravděpodobností není nastaveno target_metadata = Base.metadata nebo jste nenaimportovali soubor, kde jsou vaše modely fyzicky definované.
+Poznámky k řešení
+
+    Všechny vstupy a výstupy musí být nadále striktně validovány přes Pydantic modely.
+    Součástí řešení musí být složka alembic/versions obsahující všechny tři postupně vygenerované migrační skripty.
+    Přiložte aktualizovaný AI report (co vám AI poradilo ohledně nastavení Alembicu a jaké případné chyby při generování relací udělalo).

@@ -107,13 +107,18 @@ h2 {
 }
 
 input[type="text"],
-input[type="file"] {
+input[type="file"],
+select {
   width: 100%;
   padding: 12px 14px;
   border-radius: 14px;
   border: 1px solid rgba(74, 57, 44, 0.2);
   background: rgba(255, 255, 255, 0.9);
   color: var(--text);
+}
+
+select {
+  appearance: none;
 }
 
 button {
@@ -152,6 +157,18 @@ button.danger {
   gap: 12px;
 }
 
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  color: var(--muted);
+}
+
+.checkbox input {
+  width: auto;
+}
+
 .hint,
 .status,
 .meta {
@@ -187,6 +204,36 @@ button.danger {
 .file-list {
   display: grid;
   gap: 14px;
+}
+
+.billing-panel {
+  grid-column: span 12;
+}
+
+.billing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 14px 0 0;
+}
+
+.billing-item {
+  margin: 0;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(74, 57, 44, 0.12);
+}
+
+.billing-item dt {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.billing-item dd {
+  margin: 8px 0 0;
+  font-size: 1.25rem;
+  font-weight: 700;
 }
 
 .file-card {
