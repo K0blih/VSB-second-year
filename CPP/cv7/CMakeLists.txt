@@ -1,0 +1,16 @@
+cmake_minimum_required(VERSION 3.8)
+project(practice07)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -g")
+add_compile_options(-Wall -Wextra -pedantic)
+
+add_executable(rng rng.cpp)
+add_executable(tuples tuples.cpp)
+add_executable(data-structures data-structures.cpp)
+add_executable(vector vector.cpp)
+add_executable(associative-containers associative-containers.cpp)
+add_executable(hash-map hash-map.cpp)
+add_executable(algorithms algorithms.cpp)
+add_executable(ranges ranges.cpp)
