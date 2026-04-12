@@ -29,6 +29,8 @@ var collisionLayer;
 var objectsLayer;
 var map;
 var hud;
+var settingsButton;
+var menuObjects = [];
 var player;
 var bombs;
 var robot;
@@ -44,6 +46,22 @@ var score = 0;
 var bestScore = 0;
 var itemTimeoutSeconds = 7;
 var nextTimeoutAt = 0;
+var pausedItemTimeLeft = 0;
+var isGameOver = false;
+var isSettingsOpen = false;
+var lastGameOverReason = '';
+var bombSpeedOptions = [
+    { label: 'Slow', value: 120 },
+    { label: 'Normal', value: 180 },
+    { label: 'Fast', value: 260 }
+];
+var bombSpeedIndex = 1;
+var bgMusic;
+var pickupSound;
+var clickSound;
+var gameOverSound;
+var musicEnabled = true;
+var sfxEnabled = true;
 
 function preload() {
     this.load.spritesheet('robot', 'assets/lego.png',
@@ -55,6 +73,10 @@ function preload() {
     this.load.image('bomb', 'assets/bomb.png');
     this.load.image('tiles', 'assets/mountain_landscape.png');
     this.load.tilemapTiledJSON('json_map', 'assets/json_map.json');
+    this.load.audio('bgm', 'assets/bgm.wav');
+    this.load.audio('pickup', 'assets/pickup.wav');
+    this.load.audio('click', 'assets/click.wav');
+    this.load.audio('gameover', 'assets/gameover.wav');
 }
 
 function resize(width, height) {
@@ -118,6 +140,23 @@ function create() {
     hud.setOrigin(0.5, 0);
     hud.setDepth(1000);
 
+    settingsButton = this.add.text(0, 16, 'Settings', {
+        fontFamily: 'Arial',
+        fontSize: '18px',
+        fontStyle: 'bold',
+        color: '#ffffff',
+        backgroundColor: '#111111',
+        padding: { x: 10, y: 6 }
+    });
+    settingsButton.setOrigin(1, 0);
+    settingsButton.setDepth(1000);
+    settingsButton.setInteractive({ useHandCursor: true });
+    settingsButton.on('pointerdown', function() {
+        unlockAudio.call(this);
+        playSfx(clickSound);
+        showSettingsMenu.call(this);
+    }, this);
+
     positionHud();
 
     this.anims.create({
@@ -145,6 +184,10 @@ function create() {
     cursors = this.input.keyboard.createCursorKeys();
 
     this.input.on('pointerdown', function(pointer) {
+        startBackgroundMusic.call(this);
+        if (isGameOver || isSettingsOpen || pointer.y < 56) {
+            return;
+        }
         move_ctl = true;
         pointer_move(pointer);
     });
@@ -158,6 +201,11 @@ function create() {
         resize(window.innerWidth, window.innerHeight);
     }, false);
     resize(window.innerWidth, window.innerHeight);
+
+    bgMusic = this.sound.add('bgm', { loop: true, volume: 0.28 });
+    pickupSound = this.sound.add('pickup', { volume: 0.55 });
+    clickSound = this.sound.add('click', { volume: 0.35 });
+    gameOverSound = this.sound.add('gameover', { volume: 0.55 });
 
     spawnCollectible.call(this);
     updateText.call(this);
@@ -180,6 +228,10 @@ function positionHud() {
     }
 
     hud.setPosition(map.widthInPixels / 2, 16);
+
+    if (settingsButton) {
+        settingsButton.setPosition(map.widthInPixels - 12, 12);
+    }
 }
 
 function createBombs(count) {
@@ -189,18 +241,45 @@ function createBombs(count) {
 
         bomb.setCollideWorldBounds(true);
         bomb.setBounce(1, 1);
-        bomb.setVelocity(
-            Phaser.Math.Between(-180, 180),
-            Phaser.Math.Between(-180, 180)
-        );
-
-        if (Math.abs(bomb.body.velocity.x) < 80) {
-            bomb.body.velocity.x = 80 * (Math.random() < 0.5 ? -1 : 1);
-        }
-        if (Math.abs(bomb.body.velocity.y) < 80) {
-            bomb.body.velocity.y = 80 * (Math.random() < 0.5 ? -1 : 1);
-        }
+        setRandomBombVelocity(bomb);
     }
+}
+
+function setRandomBombVelocity(bomb) {
+    var angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+    var speed = getBombSpeed();
+
+    bomb.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+}
+
+function getBombSpeed() {
+    return bombSpeedOptions[bombSpeedIndex].value;
+}
+
+function updateBombSpeeds() {
+    if (!bombs) {
+        return;
+    }
+
+    bombs.children.iterate(function(bomb) {
+        var velocity;
+        var angle;
+        var speed;
+
+        if (!bomb || !bomb.body) {
+            return;
+        }
+
+        velocity = bomb.body.velocity;
+        angle = Math.atan2(velocity.y, velocity.x);
+        speed = getBombSpeed();
+
+        if (velocity.length() === 0) {
+            setRandomBombVelocity(bomb);
+        } else {
+            bomb.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+        }
+    });
 }
 
 function pointer_move(pointer) {
@@ -243,6 +322,10 @@ function update(time) {
     var move_x = true;
     var robotSpeed = 55;
 
+    if (isGameOver || isSettingsOpen) {
+        return;
+    }
+
     if (move_ctl) {
         pointer_move(game.input.activePointer);
     }
@@ -276,8 +359,8 @@ function update(time) {
     }
 
     if (time >= nextTimeoutAt) {
-        resetScore.call(this, 'Timeout');
-        spawnCollectible.call(this);
+        showGameOverMenu.call(this, 'Timeout');
+        return;
     }
 
     this.physics.moveToObject(robot, player, robotSpeed);
@@ -290,12 +373,13 @@ function update(time) {
 
 function updateText(time) {
     if (hud) {
-        hud.setText('Items picked: ' + score);
+        hud.setText('Items picked: ' + score + ' | Best: ' + bestScore);
     }
     positionHud();
 }
 
 function collectItem(playerSprite, item) {
+    playSfx(pickupSound);
     score += 1;
     if (score > bestScore) {
         bestScore = score;
@@ -306,19 +390,37 @@ function collectItem(playerSprite, item) {
 }
 
 function hitBomb() {
-    resetScore.call(this, 'Bomb');
+    showGameOverMenu.call(this, 'Bomb');
 }
 
 function hitRobot() {
-    resetScore.call(this, 'Robot');
+    showGameOverMenu.call(this, 'Robot');
 }
 
-function resetScore(reason) {
+function finishRun() {
     if (score > bestScore) {
         bestScore = score;
     }
+}
+
+function restartGame() {
+    clearMenu();
+    isGameOver = false;
+    isSettingsOpen = false;
+    lastGameOverReason = '';
+    move_ctl = false;
+    reset_move();
 
     score = 0;
+    player.enableBody(true, 96, 96, true, true);
+    player.setVelocity(0, 0);
+    player.angle = 0;
+    robot.enableBody(true, 224, 224, true, true);
+    robot.setVelocity(0, 0);
+    bombs.clear(true, true);
+    createBombs.call(this, 4);
+    this.physics.resume();
+    spawnCollectible.call(this);
     updateText.call(this);
 }
 
@@ -329,6 +431,193 @@ function spawnCollectible() {
     collectible.enableBody(true, position.x, position.y, true, true);
     collectible.setFrame(frame);
     nextTimeoutAt = this.time.now + itemTimeoutSeconds * 1000;
+}
+
+function showGameOverMenu(reason) {
+    var alreadyGameOver = isGameOver;
+
+    if (!alreadyGameOver) {
+        finishRun();
+        playSfx(gameOverSound);
+    }
+
+    lastGameOverReason = reason || lastGameOverReason || 'Danger';
+    isGameOver = true;
+    isSettingsOpen = false;
+    move_ctl = false;
+    reset_move();
+    this.physics.pause();
+
+    clearMenu();
+    addMenuBackdrop.call(this);
+    addMenuText.call(this, 256, 126, 'Game Over', 34);
+    addMenuText.call(this, 256, 176, 'Hit by: ' + lastGameOverReason, 20);
+    addMenuText.call(this, 256, 206, 'Score: ' + score + '   Best: ' + bestScore, 20);
+    addMenuButton.call(this, 256, 268, 'Restart', function() {
+        playSfx(clickSound);
+        restartGame.call(this);
+    });
+    addMenuButton.call(this, 256, 324, 'Settings', function() {
+        playSfx(clickSound);
+        showSettingsMenu.call(this);
+    });
+    updateText.call(this);
+}
+
+function showSettingsMenu() {
+    if (isSettingsOpen) {
+        return;
+    }
+
+    isSettingsOpen = true;
+    move_ctl = false;
+    reset_move();
+    pausedItemTimeLeft = Math.max(1000, nextTimeoutAt - this.time.now);
+    this.physics.pause();
+    clearMenu();
+    addMenuBackdrop.call(this);
+    addMenuText.call(this, 256, 96, 'Settings', 32);
+    renderSettingsMenu.call(this);
+}
+
+function renderSettingsMenu() {
+    addMenuText.call(this, 256, 150, 'Bomb speed: ' + bombSpeedOptions[bombSpeedIndex].label, 20);
+    addMenuButton.call(this, 184, 198, 'Slower', function() {
+        playSfx(clickSound);
+        bombSpeedIndex = Math.max(0, bombSpeedIndex - 1);
+        updateBombSpeeds();
+        showSettingsMenuAgain.call(this);
+    });
+    addMenuButton.call(this, 328, 198, 'Faster', function() {
+        playSfx(clickSound);
+        bombSpeedIndex = Math.min(bombSpeedOptions.length - 1, bombSpeedIndex + 1);
+        updateBombSpeeds();
+        showSettingsMenuAgain.call(this);
+    });
+    addMenuButton.call(this, 256, 258, 'Music: ' + (musicEnabled ? 'On' : 'Off'), function() {
+        playSfx(clickSound);
+        musicEnabled = !musicEnabled;
+        updateMusicState();
+        showSettingsMenuAgain.call(this);
+    });
+    addMenuButton.call(this, 256, 314, 'SFX: ' + (sfxEnabled ? 'On' : 'Off'), function() {
+        sfxEnabled = !sfxEnabled;
+        playSfx(clickSound);
+        showSettingsMenuAgain.call(this);
+    });
+    addMenuButton.call(this, 184, 386, 'Resume', function() {
+        playSfx(clickSound);
+        closeSettingsMenu.call(this);
+    });
+    addMenuButton.call(this, 328, 386, 'Restart', function() {
+        playSfx(clickSound);
+        restartGame.call(this);
+    });
+}
+
+function showSettingsMenuAgain() {
+    clearMenu();
+    addMenuBackdrop.call(this);
+    addMenuText.call(this, 256, 96, 'Settings', 32);
+    renderSettingsMenu.call(this);
+}
+
+function closeSettingsMenu() {
+    clearMenu();
+    isSettingsOpen = false;
+
+    if (isGameOver) {
+        showGameOverMenu.call(this, lastGameOverReason);
+        return;
+    }
+
+    nextTimeoutAt = this.time.now + pausedItemTimeLeft;
+    this.physics.resume();
+}
+
+function addMenuBackdrop() {
+    var shade = this.add.rectangle(256, 256, 512, 512, 0x000000, 0.72);
+    var panel = this.add.rectangle(256, 256, 360, 360, 0x202020, 0.96);
+    panel.setStrokeStyle(2, 0xffffff, 0.85);
+    shade.setDepth(2000);
+    panel.setDepth(2001);
+    menuObjects.push(shade, panel);
+}
+
+function addMenuText(x, y, text, size) {
+    var item = game.scene.scenes[0].add.text(x, y, text, {
+        fontFamily: 'Arial',
+        fontSize: size + 'px',
+        fontStyle: 'bold',
+        color: '#ffffff',
+        align: 'center',
+        stroke: '#000000',
+        strokeThickness: 3
+    });
+    item.setOrigin(0.5);
+    item.setDepth(2002);
+    menuObjects.push(item);
+    return item;
+}
+
+function addMenuButton(x, y, label, callback) {
+    var button = game.scene.scenes[0].add.text(x, y, label, {
+        fontFamily: 'Arial',
+        fontSize: '20px',
+        fontStyle: 'bold',
+        color: '#ffffff',
+        backgroundColor: '#305c89',
+        padding: { x: 16, y: 10 }
+    });
+    button.setOrigin(0.5);
+    button.setDepth(2002);
+    button.setInteractive({ useHandCursor: true });
+    button.on('pointerdown', callback, game.scene.scenes[0]);
+    menuObjects.push(button);
+    return button;
+}
+
+function clearMenu() {
+    menuObjects.forEach(function(item) {
+        if (item) {
+            item.destroy();
+        }
+    });
+    menuObjects = [];
+}
+
+function playSfx(sound) {
+    if (sfxEnabled && sound) {
+        sound.play();
+    }
+}
+
+function startBackgroundMusic() {
+    unlockAudio.call(this);
+
+    if (musicEnabled && bgMusic && !bgMusic.isPlaying) {
+        bgMusic.play();
+    }
+}
+
+function unlockAudio() {
+    var context = this && this.sound ? this.sound.context : null;
+
+    if (context && context.state === 'suspended') {
+        context.resume();
+    }
+}
+
+function updateMusicState() {
+    if (!bgMusic) {
+        return;
+    }
+
+    if (musicEnabled) {
+        startBackgroundMusic.call(game.scene.scenes[0]);
+    } else {
+        bgMusic.stop();
+    }
 }
 
 function findSpawnPosition() {
