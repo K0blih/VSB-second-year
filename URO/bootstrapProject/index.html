@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Media Database | Bootstrap GUI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <style>
+      :root {
+        --app-bg: #f4efe7;
+        --app-panel: #fffaf1;
+        --app-ink: #211a16;
+        --app-muted: #6d6258;
+        --app-accent: #b24a2c;
+        --app-accent-dark: #80331f;
+        --app-line: rgba(33, 26, 22, .12);
+      }
+
+      body {
+        min-height: 100vh;
+        color: var(--app-ink);
+        background:
+          radial-gradient(circle at 18% 12%, rgba(178, 74, 44, .18), transparent 30rem),
+          radial-gradient(circle at 88% 4%, rgba(42, 99, 117, .16), transparent 24rem),
+          linear-gradient(135deg, #f8f2e8 0%, var(--app-bg) 54%, #eadfce 100%);
+      }
+
+      .app-shell {
+        max-width: 1480px;
+      }
+
+      .navbar,
+      .app-card,
+      .status-bar {
+        background: rgba(255, 250, 241, .86);
+        border: 1px solid var(--app-line);
+        box-shadow: 0 18px 45px rgba(69, 48, 35, .10);
+        backdrop-filter: blur(14px);
+      }
+
+      .brand-mark {
+        width: 40px;
+        height: 40px;
+        display: inline-grid;
+        place-items: center;
+        color: #fff;
+        background: linear-gradient(135deg, var(--app-accent), #d99542);
+        border-radius: 14px;
+        font-weight: 800;
+      }
+
+      .text-muted-app {
+        color: var(--app-muted);
+      }
+
+      .btn-accent {
+        --bs-btn-color: #fff;
+        --bs-btn-bg: var(--app-accent);
+        --bs-btn-border-color: var(--app-accent);
+        --bs-btn-hover-color: #fff;
+        --bs-btn-hover-bg: var(--app-accent-dark);
+        --bs-btn-hover-border-color: var(--app-accent-dark);
+      }
+
+      .table thead th {
+        color: var(--app-muted);
+        font-size: .78rem;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      .table tbody tr {
+        vertical-align: middle;
+      }
+
+      .rating-pill {
+        min-width: 3.8rem;
+      }
+
+      .poster-tile {
+        min-height: 220px;
+        background:
+          linear-gradient(160deg, rgba(178, 74, 44, .92), rgba(33, 26, 22, .92)),
+          repeating-linear-gradient(45deg, transparent 0 12px, rgba(255, 255, 255, .09) 12px 24px);
+        border-radius: 24px;
+        color: #fff;
+      }
+
+      .poster-tile .display-5 {
+        letter-spacing: -.06em;
+      }
+
+      .nav-tabs .nav-link {
+        color: var(--app-muted);
+      }
+
+      .nav-tabs .nav-link.active {
+        color: var(--app-accent-dark);
+        background-color: #fff7eb;
+        border-color: var(--app-line) var(--app-line) #fff7eb;
+        font-weight: 700;
+      }
+
+      .modal-content {
+        background: var(--app-panel);
+      }
+
+      @media (max-width: 991.98px) {
+        .poster-tile {
+          min-height: 160px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container-fluid app-shell py-3 py-lg-4">
+      <nav class="navbar navbar-expand-lg rounded-4 px-3 mb-4">
+        <div class="container-fluid px-0">
+          <a class="navbar-brand d-flex align-items-center gap-3 fw-bold" href="#">
+            <span class="brand-mark">MD</span>
+            <span>
+              Media Database
+              <small class="d-block fw-normal text-muted-app">Bootstrap GUI verze projektu</small>
+            </span>
+          </a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainMenu" aria-controls="mainMenu" aria-expanded="false" aria-label="Přepnout menu">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="mainMenu">
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Soubor</a>
+                <ul class="dropdown-menu">
+                  <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#editorModal">Nová položka</a></li>
+                  <li><a class="dropdown-item disabled" href="#">Otevřít databázi</a></li>
+                  <li><a class="dropdown-item disabled" href="#">Uložit databázi</a></li>
+                  <li><a class="dropdown-item disabled" href="#">Export CSV</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item disabled" href="#">Konec</a></li>
+                </ul>
+              </li>
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Zobrazení</a>
+                <ul class="dropdown-menu">
+                  <li><a class="dropdown-item" href="#mediaTable">Seznam</a></li>
+                  <li><a class="dropdown-item" href="#detailPanel">Detail položky</a></li>
+                </ul>
+              </li>
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Statistiky</a>
+                <ul class="dropdown-menu">
+                  <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#statsModal">Přehled</a></li>
+                  <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#statsModal">Podle žánrů</a></li>
+                </ul>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#aboutModal">O aplikaci</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+
+      <header class="row g-4 align-items-stretch mb-4">
+        <div class="col-12 col-xl-8">
+          <section class="app-card rounded-4 p-4 h-100">
+            <div class="row g-4 align-items-center">
+              <div class="col-lg-8">
+                <h1 class="display-6 fw-bold mb-3">Evidence filmů, anime a seriálů</h1>
+                <p class="lead text-muted-app mb-4">
+                  Statické GUI vytvořené ve frameworku Bootstrap. Stránka ukazuje menu, filtrovací lištu, tabulku záznamů, detailní panel, poznámky a modální dialog pro editaci.
+                </p>
+                <div class="d-flex flex-wrap gap-2">
+                  <button class="btn btn-accent" data-bs-toggle="modal" data-bs-target="#editorModal">Otevřít editor položky</button>
+                  <button class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#statsModal">Zobrazit statistiky</button>
+                </div>
+              </div>
+              <div class="col-lg-4">
+                <div class="poster-tile d-flex flex-column justify-content-end p-4">
+                  <span class="badge text-bg-light align-self-start mb-3">Vybráno</span>
+                  <h2 class="display-5 fw-black mb-1">Inception</h2>
+                  <p class="mb-0 opacity-75">film | sci-fi | 9/10</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+        <div class="col-12 col-xl-4">
+          <section class="app-card rounded-4 p-4 h-100">
+            <h2 class="h5 fw-bold mb-3">Rychlý přehled</h2>
+            <div class="row g-3">
+              <div class="col-6">
+                <div class="border rounded-4 p-3 bg-white">
+                  <span class="text-muted-app small">Záznamy</span>
+                  <strong class="d-block fs-3">10</strong>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="border rounded-4 p-3 bg-white">
+                  <span class="text-muted-app small">Průměr</span>
+                  <strong class="d-block fs-3">8.6</strong>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="border rounded-4 p-3 bg-white">
+                  <span class="text-muted-app small">Shlédnuto</span>
+                  <strong class="d-block fs-3">5</strong>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="border rounded-4 p-3 bg-white">
+                  <span class="text-muted-app small">Sleduji</span>
+                  <strong class="d-block fs-3">3</strong>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </header>
+
+      <main class="row g-4">
+        <div class="col-12 col-xl-8">
+          <section class="app-card rounded-4 p-3 p-lg-4">
+            <div class="d-flex flex-column flex-lg-row gap-3 align-items-lg-end justify-content-between mb-4">
+              <div>
+                <h2 class="h4 fw-bold mb-1">Seznam položek</h2>
+                <p class="text-muted-app mb-0">Ukázková data, tabulka je vložená do responzivního kontejneru.</p>
+              </div>
+              <div class="d-flex flex-column flex-sm-row gap-2">
+                <div>
+                  <label class="form-label small mb-1" for="search">Hledat</label>
+                  <input class="form-control" id="search" type="search" placeholder="Název, žánr, rok...">
+                </div>
+                <div>
+                  <label class="form-label small mb-1" for="typeFilter">Typ</label>
+                  <select class="form-select" id="typeFilter">
+                    <option>Vše</option>
+                    <option>film</option>
+                    <option>anime</option>
+                    <option>seriál</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="table-responsive" id="mediaTable">
+              <table class="table table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Název</th>
+                    <th>Typ</th>
+                    <th>Žánr</th>
+                    <th>Stav</th>
+                    <th>Hodnocení</th>
+                    <th>Rok</th>
+                    <th>Poznámka</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="table-warning">
+                    <td class="fw-semibold">Inception</td>
+                    <td><span class="badge text-bg-dark">film</span></td>
+                    <td>sci-fi</td>
+                    <td>shlédnuto</td>
+                    <td><span class="badge rounded-pill text-bg-success rating-pill">9/10</span></td>
+                    <td>2010</td>
+                    <td>Mind-bending heist in dreams.</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-semibold">Attack on Titan</td>
+                    <td><span class="badge text-bg-danger">anime</span></td>
+                    <td>akční</td>
+                    <td>sleduji</td>
+                    <td><span class="badge rounded-pill text-bg-success rating-pill">10/10</span></td>
+                    <td>2013</td>
+                    <td>Dark fantasy with intense world building.</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-semibold">Breaking Bad</td>
+                    <td><span class="badge text-bg-primary">seriál</span></td>
+                    <td>drama</td>
+                    <td>shlédnuto</td>
+                    <td><span class="badge rounded-pill text-bg-success rating-pill">10/10</span></td>
+                    <td>2008</td>
+                    <td>Chemistry teacher turns to crime.</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-semibold">Spirited Away</td>
+                    <td><span class="badge text-bg-danger">anime</span></td>
+                    <td>fantasy</td>
+                    <td>shlédnuto</td>
+                    <td><span class="badge rounded-pill text-bg-success rating-pill">9/10</span></td>
+                    <td>2001</td>
+                    <td>Magical bathhouse journey.</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-semibold">The Office</td>
+                    <td><span class="badge text-bg-primary">seriál</span></td>
+                    <td>komedie</td>
+                    <td>sleduji</td>
+                    <td><span class="badge rounded-pill text-bg-warning rating-pill">8/10</span></td>
+                    <td>2005</td>
+                    <td>Workplace mockumentary.</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-semibold">Dune: Part Two</td>
+                    <td><span class="badge text-bg-dark">film</span></td>
+                    <td>sci-fi</td>
+                    <td>plánuji</td>
+                    <td><span class="badge rounded-pill text-bg-secondary rating-pill">-</span></td>
+                    <td>2024</td>
+                    <td>Pokračování příběhu Paula Atreida.</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-semibold">Death Note</td>
+                    <td><span class="badge text-bg-danger">anime</span></td>
+                    <td>thriller</td>
+                    <td>shlédnuto</td>
+                    <td><span class="badge rounded-pill text-bg-success rating-pill">9/10</span></td>
+                    <td>2006</td>
+                    <td>Psychologická hra kočky s myší.</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-semibold">The Last of Us</td>
+                    <td><span class="badge text-bg-primary">seriál</span></td>
+                    <td>drama</td>
+                    <td>odloženo</td>
+                    <td><span class="badge rounded-pill text-bg-warning rating-pill">7/10</span></td>
+                    <td>2023</td>
+                    <td>Postapokalyptická adaptace hry.</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-semibold">Interstellar</td>
+                    <td><span class="badge text-bg-dark">film</span></td>
+                    <td>sci-fi</td>
+                    <td>shlédnuto</td>
+                    <td><span class="badge rounded-pill text-bg-success rating-pill">9/10</span></td>
+                    <td>2014</td>
+                    <td>Vesmírná cesta za záchranou lidstva.</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-semibold">One Piece</td>
+                    <td><span class="badge text-bg-danger">anime</span></td>
+                    <td>akční</td>
+                    <td>sleduji</td>
+                    <td><span class="badge rounded-pill text-bg-warning rating-pill">8/10</span></td>
+                    <td>1999</td>
+                    <td>Dlouhá pirátská výprava.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <div class="col-12 col-xl-4">
+          <section class="app-card rounded-4 p-3 p-lg-4 h-100" id="detailPanel">
+            <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+              <div>
+                <h2 class="h4 fw-bold mb-1">Detail položky</h2>
+                <p class="text-muted-app mb-0">Staticky vybraná položka z tabulky.</p>
+              </div>
+              <button class="btn btn-sm btn-accent" data-bs-toggle="modal" data-bs-target="#editorModal">Editovat</button>
+            </div>
+
+            <ul class="nav nav-tabs" id="detailTabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="detail-tab" data-bs-toggle="tab" data-bs-target="#detail-tab-pane" type="button" role="tab">Detail</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes-tab-pane" type="button" role="tab">Poznámky</button>
+              </li>
+            </ul>
+            <div class="tab-content border border-top-0 rounded-bottom-4 bg-white p-3">
+              <div class="tab-pane fade show active" id="detail-tab-pane" role="tabpanel" tabindex="0">
+                <form class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label">Název</label>
+                    <input type="text" class="form-control" value="Inception">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Typ</label>
+                    <select class="form-select">
+                      <option selected>film</option>
+                      <option>anime</option>
+                      <option>seriál</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Žánr</label>
+                    <input type="text" class="form-control" value="sci-fi">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label d-block">Stav</label>
+                    <div class="d-flex flex-wrap gap-3">
+                      <div class="form-check">
+                        <input class="form-check-input" type="radio" name="status" id="planned">
+                        <label class="form-check-label" for="planned">plánuji</label>
+                      </div>
+                      <div class="form-check">
+                        <input class="form-check-input" type="radio" name="status" id="watching">
+                        <label class="form-check-label" for="watching">sleduji</label>
+                      </div>
+                      <div class="form-check">
+                        <input class="form-check-input" type="radio" name="status" id="watched" checked>
+                        <label class="form-check-label" for="watched">shlédnuto</label>
+                      </div>
+                      <div class="form-check">
+                        <input class="form-check-input" type="radio" name="status" id="paused">
+                        <label class="form-check-label" for="paused">odloženo</label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Hodnocení</label>
+                    <select class="form-select">
+                      <option>1/10</option>
+                      <option>2/10</option>
+                      <option>3/10</option>
+                      <option>4/10</option>
+                      <option>5/10</option>
+                      <option>6/10</option>
+                      <option>7/10</option>
+                      <option>8/10</option>
+                      <option selected>9/10</option>
+                      <option>10/10</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Rok</label>
+                    <input type="number" class="form-control" value="2010">
+                  </div>
+                </form>
+              </div>
+              <div class="tab-pane fade" id="notes-tab-pane" role="tabpanel" tabindex="0">
+                <label class="form-label">Poznámka</label>
+                <textarea class="form-control" rows="9">Mind-bending heist in dreams. V detailu je vidět, jak by vypadalo editační okno z Tkinter verze jako Bootstrap formulář.</textarea>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+
+      <footer class="status-bar rounded-4 px-3 py-2 mt-4 d-flex flex-column flex-md-row gap-2 justify-content-between text-muted-app small">
+        <span>Stav: načteno 10 ukázkových položek.</span>
+        <span>Autor: Richard Chovanec | Login: CHO0289</span>
+      </footer>
+    </div>
+
+    <div class="modal fade" id="editorModal" tabindex="-1" aria-labelledby="editorModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content rounded-4">
+          <div class="modal-header">
+            <div>
+              <h2 class="modal-title h4 fw-bold" id="editorModalLabel">Editor položky</h2>
+              <p class="text-muted-app mb-0">Složitější okno s formulářem, taby a náhledem.</p>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Zavřít"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-4">
+              <div class="col-lg-7">
+                <ul class="nav nav-pills mb-3" role="tablist">
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#editorDetail" type="button" role="tab">Základní údaje</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#editorNotes" type="button" role="tab">Poznámky</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#editorMeta" type="button" role="tab">Metadata</button>
+                  </li>
+                </ul>
+                <div class="tab-content bg-white border rounded-4 p-3">
+                  <div class="tab-pane fade show active" id="editorDetail" role="tabpanel" tabindex="0">
+                    <form class="row g-3">
+                      <div class="col-12">
+                        <label class="form-label">Název</label>
+                        <input class="form-control" type="text" value="Inception">
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">Typ</label>
+                        <select class="form-select">
+                          <option selected>film</option>
+                          <option>anime</option>
+                          <option>seriál</option>
+                        </select>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">Žánr</label>
+                        <input class="form-control" type="text" value="sci-fi">
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">Hodnocení</label>
+                        <input class="form-range" type="range" min="1" max="10" value="9">
+                        <div class="small text-muted-app">Aktuální hodnota: 9/10</div>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">Rok</label>
+                        <input class="form-control" type="number" min="1900" max="2100" value="2010">
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label d-block">Stav sledování</label>
+                        <div class="btn-group flex-wrap" role="group" aria-label="Stav sledování">
+                          <input type="radio" class="btn-check" name="editorStatus" id="editorPlanned">
+                          <label class="btn btn-outline-secondary" for="editorPlanned">plánuji</label>
+                          <input type="radio" class="btn-check" name="editorStatus" id="editorWatching">
+                          <label class="btn btn-outline-secondary" for="editorWatching">sleduji</label>
+                          <input type="radio" class="btn-check" name="editorStatus" id="editorWatched" checked>
+                          <label class="btn btn-outline-secondary" for="editorWatched">shlédnuto</label>
+                          <input type="radio" class="btn-check" name="editorStatus" id="editorPaused">
+                          <label class="btn btn-outline-secondary" for="editorPaused">odloženo</label>
+                        </div>
+                      </div>
+                    </form>
+                  </div>
+                  <div class="tab-pane fade" id="editorNotes" role="tabpanel" tabindex="0">
+                    <label class="form-label">Poznámka</label>
+                    <textarea class="form-control" rows="11">Mind-bending heist in dreams.</textarea>
+                  </div>
+                  <div class="tab-pane fade" id="editorMeta" role="tabpanel" tabindex="0">
+                    <div class="row g-3">
+                      <div class="col-md-6">
+                        <label class="form-label">Interní ID</label>
+                        <input class="form-control" value="MD-001" readonly>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">Poslední změna</label>
+                        <input class="form-control" value="29. 4. 2026" readonly>
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label">Tagy</label>
+                        <input class="form-control" value="dreams, Nolan, sci-fi, thriller">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-5">
+                <div class="poster-tile p-4 mb-3 d-flex flex-column justify-content-end">
+                  <span class="badge text-bg-light align-self-start mb-3">Náhled</span>
+                  <h3 class="fw-bold mb-1">Inception</h3>
+                  <p class="mb-0 opacity-75">film | sci-fi | shlédnuto</p>
+                </div>
+                <div class="list-group">
+                  <div class="list-group-item d-flex justify-content-between">
+                    <span>Hodnocení</span>
+                    <strong>9/10</strong>
+                  </div>
+                  <div class="list-group-item d-flex justify-content-between">
+                    <span>Rok</span>
+                    <strong>2010</strong>
+                  </div>
+                  <div class="list-group-item d-flex justify-content-between">
+                    <span>Poznámka</span>
+                    <strong>33 znaků</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Zrušit</button>
+            <button type="button" class="btn btn-accent" data-bs-dismiss="modal">Uložit vzhledově</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="statsModal" tabindex="-1" aria-labelledby="statsModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content rounded-4">
+          <div class="modal-header">
+            <h2 class="modal-title h5 fw-bold" id="statsModalLabel">Statistiky knihovny</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Zavřít"></button>
+          </div>
+          <div class="modal-body">
+            <ul class="list-group mb-3">
+              <li class="list-group-item d-flex justify-content-between"><span>Počet položek</span><strong>10</strong></li>
+              <li class="list-group-item d-flex justify-content-between"><span>Shlédnuto</span><strong>5</strong></li>
+              <li class="list-group-item d-flex justify-content-between"><span>Právě sleduji</span><strong>3</strong></li>
+              <li class="list-group-item d-flex justify-content-between"><span>Průměrné hodnocení</span><strong>8.6/10</strong></li>
+            </ul>
+            <h3 class="h6 fw-bold">Podle žánrů</h3>
+            <div class="d-flex flex-wrap gap-2">
+              <span class="badge text-bg-dark">sci-fi: 3</span>
+              <span class="badge text-bg-secondary">drama: 2</span>
+              <span class="badge text-bg-danger">akční: 2</span>
+              <span class="badge text-bg-warning">fantasy: 1</span>
+              <span class="badge text-bg-info">komedie: 1</span>
+              <span class="badge text-bg-primary">thriller: 1</span>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-accent" data-bs-dismiss="modal">Zavřít</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="aboutModal" tabindex="-1" aria-labelledby="aboutModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content rounded-4">
+          <div class="modal-header">
+            <h2 class="modal-title h5 fw-bold" id="aboutModalLabel">O aplikaci</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Zavřít"></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-2"><strong>Media Database</strong> je statické Bootstrap GUI pro evidenci filmů, anime a seriálů.</p>
+            <p class="mb-0">Obsahuje responzivní layout, menu, tabulku s 10 záznamy, detailní formulář, taby, modální dialogy a status bar.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-accent" data-bs-dismiss="modal">Zavřít</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+  </body>
+</html>
