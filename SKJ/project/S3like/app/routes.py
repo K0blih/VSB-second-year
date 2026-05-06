@@ -1,13 +1,18 @@
+import json
+from uuid import uuid4
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Annotated
 
 from sqlalchemy.orm import Session
 from pydantic import ValidationError
+import websockets
+from websockets.exceptions import WebSocketException
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile, status
 from fastapi.responses import FileResponse
 
+from app.config import BROKER_WS_URL
 from app.dependencies import (
     get_bucket_id,
     get_current_user_id,
@@ -21,6 +26,8 @@ from app.schemas import (
     BucketCreateRequest,
     BucketResponse,
     FileMetadataResponse,
+    ImageProcessRequest,
+    ImageProcessResponse,
     FileUploadForm,
     FileUploadResponse,
 )
@@ -28,6 +35,31 @@ from app.storage import storage_service
 
 
 router = APIRouter()
+
+
+async def publish_broker_message(topic: str, payload: dict) -> None:
+    try:
+        async with websockets.connect(f"{BROKER_WS_URL}?format=json") as websocket:
+            await websocket.send(
+                json.dumps(
+                    {
+                        "action": "publish",
+                        "topic": topic,
+                        "payload": payload,
+                    }
+                )
+            )
+            await websocket.send(json.dumps({"action": "flush"}))
+            while True:
+                raw = await websocket.recv()
+                message = json.loads(raw)
+                if message == {"action": "flushed"}:
+                    return
+    except (OSError, TimeoutError, WebSocketException, json.JSONDecodeError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Failed to publish image processing job to the broker.",
+        ) from exc
 
 
 def get_owned_bucket(db: Session, user_id: str, bucket_id: int) -> Bucket:
@@ -172,6 +204,39 @@ def get_bucket_billing(
     bucket.count_read_requests += 1
     db.commit()
     return bucket
+
+
+@router.post(
+    "/buckets/{bucket_id}/objects/{file_id}/process",
+    response_model=ImageProcessResponse,
+    tags=["images"],
+)
+async def process_bucket_object(
+    payload: ImageProcessRequest,
+    bucket_id: Annotated[int, Depends(get_bucket_id)],
+    file_id: Annotated[str, Depends(get_file_id)],
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+) -> ImageProcessResponse:
+    bucket = get_owned_bucket(db, user_id, bucket_id)
+    file_record = get_owned_file(db, user_id, file_id)
+    if file_record.bucket_id != bucket.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found in bucket.")
+
+    job_id = str(uuid4())
+    await publish_broker_message(
+        "image.jobs",
+        {
+            "job_id": job_id,
+            "user_id": user_id,
+            "bucket_id": bucket.id,
+            "file_id": file_record.id,
+            "filename": file_record.filename,
+            "operation": payload.operation,
+            "params": payload.params,
+        },
+    )
+    return ImageProcessResponse(status="processing_started", job_id=job_id)
 
 
 @router.post(

@@ -97,6 +97,7 @@ function renderFiles(files) {
   for (const file of files) {
     const card = document.createElement("article");
     card.className = "file-card";
+    card.dataset.fileId = file.id;
 
     const createdAt = new Date(file.created_at).toLocaleString();
     card.innerHTML = `
@@ -106,6 +107,25 @@ function renderFiles(files) {
         <p class="meta">Bucket: #${file.bucket_id} • Size: ${formatSize(file.size)} • Created: ${createdAt}</p>
       </div>
       <div class="file-actions">
+        <label class="compact-field">
+          <span>Operation</span>
+          <select data-role="operation">
+            <option value="grayscale">Grayscale</option>
+            <option value="negative">Negative</option>
+            <option value="mirror">Mirror</option>
+            <option value="brightness">Brightness</option>
+            <option value="crop">Crop</option>
+          </select>
+        </label>
+        <label class="compact-field">
+          <span>Amount</span>
+          <input data-role="brightness" type="number" value="50" />
+        </label>
+        <label class="compact-field">
+          <span>Crop x/y/w/h</span>
+          <input data-role="crop" type="text" placeholder="0,0,200,200" />
+        </label>
+        <button data-action="process" data-id="${file.id}">Process</button>
         <button class="secondary" data-action="download" data-id="${file.id}">Download</button>
         <button class="danger" data-action="delete" data-id="${file.id}">Soft Delete</button>
       </div>
@@ -325,6 +345,52 @@ async function deleteFile(fileId) {
   }
 }
 
+function processParamsFor(card, operation) {
+  if (operation === "brightness") {
+    const amount = Number(card.querySelector("[data-role='brightness']").value || 50);
+    return { amount };
+  }
+  if (operation === "crop") {
+    const raw = card.querySelector("[data-role='crop']").value.trim();
+    if (!raw) {
+      return { border: 100 };
+    }
+    const values = raw.split(",").map((item) => Number(item.trim()));
+    if (values.length !== 4 || values.some((value) => !Number.isInteger(value))) {
+      throw new Error("Crop must use x,y,width,height integer values.");
+    }
+    const [x, y, width, height] = values;
+    return { x, y, width, height };
+  }
+  return {};
+}
+
+async function processFile(fileId, card) {
+  const bucketId = getSelectedBucketId();
+  const operation = card.querySelector("[data-role='operation']").value;
+  let params;
+  try {
+    params = processParamsFor(card, operation);
+  } catch (error) {
+    setStatus(listStatus, error.message, true);
+    return;
+  }
+
+  setStatus(listStatus, "Starting image processing...");
+  try {
+    await apiFetch(`/buckets/${bucketId}/objects/${fileId}/process`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ operation, params }),
+    });
+    setStatus(listStatus, `Processing job started for ${operation}.`);
+    await loadBilling();
+    window.setTimeout(loadBucketObjects, 1000);
+  } catch (error) {
+    setStatus(listStatus, error.message, true);
+  }
+}
+
 loadBucketsButton.addEventListener("click", loadBuckets);
 bucketForm.addEventListener("submit", handleCreateBucket);
 bucketSelect.addEventListener("change", refreshSelectedBucketData);
@@ -336,6 +402,10 @@ fileList.addEventListener("click", async (event) => {
   }
 
   const { action, id } = button.dataset;
+  const card = button.closest(".file-card");
+  if (action === "process") {
+    await processFile(id, card);
+  }
   if (action === "download") {
     await downloadFile(id);
   }

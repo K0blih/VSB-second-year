@@ -1,5 +1,7 @@
 from datetime import datetime
 
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -89,3 +91,22 @@ class FileUploadResponse(BaseModel):
 
 class FileMetadataResponse(FileUploadResponse):
     created_at: datetime
+
+
+class ImageProcessRequest(BaseModel):
+    operation: str = Field(
+        ...,
+        min_length=1,
+        max_length=32,
+        description="Image operation requested for the async worker.",
+        examples=["grayscale"],
+    )
+    params: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Operation-specific parameters, such as crop bounds or brightness amount.",
+    )
+
+
+class ImageProcessResponse(BaseModel):
+    status: str = Field(..., examples=["processing_started"])
+    job_id: str = Field(..., min_length=1)

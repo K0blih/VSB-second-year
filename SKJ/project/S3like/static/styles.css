@@ -107,6 +107,7 @@ h2 {
 }
 
 input[type="text"],
+input[type="number"],
 input[type="file"],
 select {
   width: 100%;
@@ -256,6 +257,28 @@ button.danger {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  align-items: end;
+  max-width: 520px;
+}
+
+.compact-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 120px;
+}
+
+.compact-field span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.compact-field input,
+.compact-field select {
+  min-height: 42px;
+  padding: 9px 10px;
+  border-radius: 12px;
 }
 
 .meta {
