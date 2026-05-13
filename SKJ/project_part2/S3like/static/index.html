@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Object Storage</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script defer src="/static/app.js"></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <p class="eyebrow">SKJ CV6 - CV8</p>
+        <h1>Object Storage Control Panel</h1>
+        <p class="hero-copy">
+          Create buckets, upload objects into them, inspect billing counters, and
+          soft-delete files for a selected user without leaving the browser.
+        </p>
+      </header>
+
+      <main class="grid">
+        <section class="panel">
+          <h2>Session</h2>
+          <label class="field">
+            <span>User ID</span>
+            <input id="userId" type="text" placeholder="user-1" />
+          </label>
+          <p class="hint">
+            The app sends this value as the <code>X-User-Id</code> header.
+          </p>
+          <label class="checkbox">
+            <input id="internalSource" type="checkbox" />
+            <span>Simulate internal transfer</span>
+          </label>
+          <button id="loadBucketsButton" class="secondary">Load Buckets</button>
+        </section>
+
+        <section class="panel">
+          <h2>Create Bucket</h2>
+          <form id="bucketForm" class="upload-form">
+            <label class="field">
+              <span>Bucket name</span>
+              <input id="bucketNameInput" type="text" placeholder="archive-2026" required />
+            </label>
+            <button type="submit">Create Bucket</button>
+          </form>
+          <p id="bucketStatus" class="status" aria-live="polite"></p>
+        </section>
+
+        <section class="panel">
+          <h2>Upload Object</h2>
+          <label class="field">
+            <span>Active bucket</span>
+            <select id="bucketSelect"></select>
+          </label>
+          <form id="uploadForm" class="upload-form">
+            <label class="field">
+              <span>Select file</span>
+              <input id="fileInput" type="file" required />
+            </label>
+            <button type="submit">Upload Object</button>
+          </form>
+          <p id="uploadStatus" class="status" aria-live="polite"></p>
+        </section>
+
+        <section class="panel admin-panel">
+          <h2>Storage Admin</h2>
+          <form id="compactForm" class="upload-form">
+            <label class="field">
+              <span>Volume ID</span>
+              <input id="compactVolumeInput" type="number" min="1" value="1" required />
+            </label>
+            <button type="submit" class="secondary">Compact Volume</button>
+          </form>
+          <p id="compactStatus" class="status" aria-live="polite"></p>
+        </section>
+
+        <section class="panel billing-panel">
+          <div class="panel-header">
+            <h2>Bucket Billing</h2>
+            <span id="activeBucketBadge" class="badge">No bucket selected</span>
+          </div>
+          <p id="billingStatus" class="status" aria-live="polite"></p>
+          <dl id="billingGrid" class="billing-grid"></dl>
+        </section>
+
+        <section class="panel files-panel">
+          <div class="panel-header">
+            <h2>Bucket Objects</h2>
+            <span id="fileCount" class="badge">0 objects</span>
+          </div>
+          <p id="listStatus" class="status" aria-live="polite"></p>
+          <div id="emptyState" class="empty-state">No bucket objects loaded yet.</div>
+          <div id="fileList" class="file-list"></div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
